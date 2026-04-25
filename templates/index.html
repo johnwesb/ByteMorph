@@ -3,30 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>VaultPDF - Secure & Local</title>
+    <title>ByteMorph - Secure & Local</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
-    
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 
     <style>
         .fade-enter { opacity: 0; transform: translateY(10px); }
         .fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.3s ease-out; }
-        
         .custom-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
         .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; border-radius: 8px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #f8fafc; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        
         .sortable-ghost-img { opacity: 0.3; border: 4px dashed #10b981; border-radius: 0.75rem; transform: scale(0.95); }
         .sortable-ghost-doc { opacity: 0.3; border: 2px dashed #10b981; background: #ecfdf5; }
-        
         .pulse-emerald { animation: pulse-emerald 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
         @keyframes pulse-emerald { 0%, 100% { opacity: 1; color: #059669; } 50% { opacity: .5; color: #34d399; } }
-
-        /* Canvas styling for generated PDF pages */
         .pdf-canvas-render { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0; }
     </style>
 </head>
@@ -36,9 +30,9 @@
         <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
             <div class="flex items-center gap-3 cursor-pointer" onclick="closeWorkspace()">
                 <div class="bg-emerald-600 text-white w-8 h-8 rounded flex items-center justify-center shadow-md">
-                    <i class="fa-solid fa-vault"></i>
+                    <i class="fa-solid fa-microchip"></i>
                 </div>
-                <span class="text-2xl font-extrabold text-slate-800 tracking-tight">Vault<span class="text-emerald-600 font-bold">PDF</span></span>
+                <span class="text-2xl font-extrabold text-slate-800 tracking-tight">Byte<span class="text-emerald-600 font-bold">Morph</span></span>
             </div>
             
             <div class="hidden md:flex space-x-8 text-sm font-semibold text-slate-600">
@@ -55,7 +49,6 @@
     </nav>
 
     <main class="flex-grow w-full pb-16">
-        
         <div id="dashboard-view" class="fade-enter-active">
             <div class="bg-white py-16 mb-12 border-b border-slate-200 text-center px-4 shadow-sm">
                 <h1 class="text-4xl md:text-5xl font-extrabold text-slate-800 mb-4 tracking-tight">Your Offline PDF Workspace</h1>
@@ -72,25 +65,30 @@
             <div class="bg-[#1e293b] text-white py-10 mb-8 px-4 border-b-4 border-emerald-500 w-full" id="workspace-hero"></div>
             <div class="max-w-7xl w-full mx-auto px-4" id="workspace-container"></div>
         </div>
-
     </main>
+
+    <footer class="bg-white border-t border-slate-200 py-8 text-center text-slate-400 text-sm">
+        <p>&copy; 2026 ByteMorph. Secure Local Environment.</p>
+    </footer>
 
     <script>
         const tools = [
             { id: 'pdf2img', title: 'PDF to Image', desc: 'Convert pages to JPG/PNG', icon: 'fa-file-image text-emerald-500', api: '/api/pdf-to-image', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', optionsHtml: '' },
             { id: 'merge', title: 'Merge PDFs', desc: 'Combine documents in order', icon: 'fa-layer-group text-purple-500', api: '/api/merge-pdfs', accept: '.pdf', multiple: true, dropText: 'Upload PDF files', optionsHtml: '<div id="merge-sort-ui" class="hidden flex-grow flex flex-col w-full"><div id="merge-thumbnails" class="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto custom-scrollbar flex-grow p-2" style="max-height: 60vh;"></div></div>' },
             { id: 'img2pdf', title: 'Images to PDF', desc: 'Turn photos into a PDF', icon: 'fa-images text-blue-500', api: '/api/images-to-pdf', accept: 'image/png, image/jpeg, image/jpg', multiple: true, dropText: 'Upload Images', optionsHtml: '<div id="img2pdf-sort-ui" class="hidden flex-grow flex flex-col w-full"><div id="img2pdf-thumbnails" class="flex flex-wrap gap-6 overflow-y-auto custom-scrollbar flex-grow content-start justify-center p-4 bg-slate-50 rounded-xl border border-slate-200" style="max-height: 60vh;"></div></div>' },
-            { id: 'extract', title: 'Extract Text', desc: 'Pull raw text out of PDFs', icon: 'fa-file-lines text-orange-500', api: '/api/extract-text', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', optionsHtml: '' },
             { id: 'split', title: 'Split PDF', desc: 'Extract specific pages', icon: 'fa-scissors text-red-500', api: '/api/split-pdf', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', optionsHtml: '<div class="flex gap-6"><div class="w-1/2"><label class="text-sm font-bold text-slate-700">Start Page</label><input type="number" name="start" min="1" class="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-emerald-500 outline-none text-lg mt-2 transition-colors" value="1" required></div><div class="w-1/2"><label class="text-sm font-bold text-slate-700">End Page</label><input type="number" name="end" min="1" class="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-emerald-500 outline-none text-lg mt-2 transition-colors" value="1" required></div></div>' },
             { id: 'rotate', title: 'Rotate PDF', desc: 'Fix page orientation', icon: 'fa-rotate-right text-indigo-500', api: '/api/rotate-pdf', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', optionsHtml: '<div><label class="text-sm font-bold text-slate-700">Rotation Angle</label><select name="angle" class="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-emerald-500 outline-none text-lg mt-2 transition-colors"><option value="90">90 Degrees Clockwise</option><option value="180">180 Degrees</option><option value="270">90 Degrees Counter-Clockwise</option></select></div>' },
+            { id: 'extract', title: 'Extract Text', desc: 'Pull raw text out of PDFs', icon: 'fa-file-lines text-orange-500', api: '/api/extract-text', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', optionsHtml: '' },
             { id: 'protect', title: 'Protect PDF', desc: 'Add AES encryption', icon: 'fa-lock text-slate-600', api: '/api/protect-pdf', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', optionsHtml: '<div><label class="text-sm font-bold text-slate-700">Set Password</label><input type="password" name="password" placeholder="••••••••" class="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-emerald-500 outline-none text-lg mt-2 transition-colors" required></div>' },
-            { id: 'unlock', title: 'Unlock PDF', desc: 'Remove password', icon: 'fa-unlock text-emerald-600', api: '/api/unlock-pdf', accept: '.pdf', multiple: false, dropText: 'Upload Protected PDF', optionsHtml: '<div><label class="text-sm font-bold text-slate-700">Current Password</label><input type="password" name="password" placeholder="••••••••" class="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-emerald-500 outline-none text-lg mt-2 transition-colors" required></div>' }
+            { id: 'unlock', title: 'Unlock PDF', desc: 'Remove password', icon: 'fa-unlock text-emerald-600', api: '/api/unlock-pdf', accept: '.pdf', multiple: false, dropText: 'Upload Protected PDF', optionsHtml: '<div><label class="text-sm font-bold text-slate-700">Current Password</label><input type="password" name="password" placeholder="••••••••" class="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-emerald-500 outline-none text-lg mt-2 transition-colors" required></div>' },
+            { id: 'watermark', title: 'Add Watermark', desc: 'Stamp text on pages', icon: 'fa-stamp text-sky-500', api: '/api/add-watermark', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', optionsHtml: '<div><label class="text-sm font-bold text-slate-700">Watermark Text</label><input type="text" name="watermark_text" placeholder="CONFIDENTIAL" class="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-emerald-500 outline-none text-lg mt-2 transition-colors" required></div>' },
+            { id: 'pdf2word', title: 'PDF to Word', desc: 'Convert PDF to DOCX', icon: 'fa-file-word text-blue-600', api: '/api/pdf-to-word', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', optionsHtml: '<div class="bg-blue-50 text-blue-700 p-4 rounded-lg flex items-center"><i class="fa-solid fa-circle-info text-2xl mr-4"></i><div><p class="font-bold">Layout Conversion</p><p class="text-sm">We will attempt to reconstruct the text, tables, and images into an editable Word document.</p></div></div>' },
+            { id: 'word2pdf', title: 'Word to PDF', desc: 'Convert DOCX to PDF', icon: 'fa-file-pdf text-red-600', api: '/api/word-to-pdf', accept: '.docx', multiple: false, dropText: 'Upload Word DOCX', optionsHtml: '<div class="bg-emerald-50 text-emerald-700 p-4 rounded-lg flex items-center"><i class="fa-solid fa-circle-info text-2xl mr-4"></i><div><p class="font-bold">Requires MS Office</p><p class="text-sm">This tool uses Microsoft Word in the background of your PC to safely convert the document.</p></div></div>' }
         ];
 
         const activeFileMaps = { 'img2pdf': new Map(), 'merge': new Map() };
         let currentToolId = null;
 
-        // Initialize Dashboard Launcher
         const launcherGrid = document.getElementById('launcher-grid');
         tools.forEach(tool => {
             launcherGrid.innerHTML += `
@@ -165,7 +163,7 @@
                         <i id="loading-spinner" class="fa-solid fa-circle-notch fa-spin"></i>
                     </div>
                     <h4 id="loading-title" class="font-extrabold text-4xl text-slate-800 mb-3">Processing...</h4>
-                    <p id="loading-desc" class="text-xl text-slate-500 mb-12">Please wait while VaultPDF secures your files.</p>
+                    <p id="loading-desc" class="text-xl text-slate-500 mb-12">Please wait while ByteMorph secures your files.</p>
                     
                     <div class="flex justify-center items-center gap-6 text-lg font-bold text-slate-300">
                         <div id="step-upload" class="flex flex-col items-center gap-3 transition-colors duration-300 w-24">
@@ -186,7 +184,7 @@
                     <div class="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl shadow-inner">
                         <i class="fa-solid fa-check"></i>
                     </div>
-                    <h4 class="font-bold text-4xl text-slate-800 mb-3">Vault Task Completed</h4>
+                    <h4 class="font-bold text-4xl text-slate-800 mb-3">ByteMorph Task Completed</h4>
                     <p class="text-xl text-slate-500 mb-10">Your secure file is ready for download.</p>
                     
                     <a id="workspace-download" href="#" class="bg-emerald-600 text-white text-xl font-bold py-5 px-12 rounded-xl hover:bg-emerald-700 transition-colors mb-4 shadow-lg flex items-center justify-center w-full md:w-auto md:inline-flex">
@@ -242,7 +240,6 @@
             const dropzone = document.getElementById('workspace-dropzone');
             const optionsArea = document.getElementById('workspace-options');
             const loadingView = document.getElementById('workspace-loading');
-            
             const stepUpload = document.getElementById('step-upload');
             const loadingTitle = document.getElementById('loading-title');
             const loadingDesc = document.getElementById('loading-desc');
@@ -254,11 +251,10 @@
             dropzone.classList.add('hidden');
             loadingView.classList.remove('hidden');
 
-            // Allow UI to breathe before heavy canvas rendering
             setTimeout(() => {
                 if (toolId === 'img2pdf') generateImageUI(inputElement);
                 else if (toolId === 'merge') generateMergeUI(inputElement);
-                else generateSingleFileUI(inputElement);
+                else generateSingleFileUI(inputElement, toolId);
 
                 stepUpload.className = "flex flex-col items-center gap-3 transition-colors duration-300 w-24 text-emerald-500";
                 loadingView.classList.add('hidden');
@@ -266,10 +262,6 @@
             }, 800); 
         }
 
-        // ==========================================
-        // NEW PDF.JS RENDERING ENGINE 
-        // ==========================================
-        
         async function renderPdfPageToCanvas(file, pageNum = 1, targetWidth = 200) {
             const fileUrl = URL.createObjectURL(file);
             const pdf = await pdfjsLib.getDocument(fileUrl).promise;
@@ -289,60 +281,63 @@
             return { canvas: canvas, totalPages: pdf.numPages };
         }
 
-        async function generateSingleFileUI(inputElement) {
+        async function generateSingleFileUI(inputElement, toolId) {
             const previewContainer = document.getElementById('generic-file-preview');
             const file = inputElement.files[0];
             if(!file) return;
 
-            // Show a basic header
+            let iconHtml = '<i class="fa-solid fa-file-pdf"></i>';
+            if(toolId === 'word2pdf') iconHtml = '<i class="fa-solid fa-file-word text-blue-600"></i>';
+
             previewContainer.innerHTML = `
                 <div class="flex items-center gap-4 mb-4 pb-4 border-b border-slate-100">
-                    <div class="text-red-500 text-3xl"><i class="fa-solid fa-file-pdf"></i></div>
+                    <div class="text-red-500 text-3xl">${iconHtml}</div>
                     <div class="flex-grow truncate">
                         <h4 class="font-bold text-slate-800 text-lg truncate">${file.name}</h4>
                         <p class="text-xs text-slate-500">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
                     </div>
                 </div>
-                <div id="pdf-pages-grid" class="flex gap-4 overflow-x-auto custom-scrollbar pb-4 pt-2">
+                ${toolId !== 'word2pdf' ? `<div id="pdf-pages-grid" class="flex gap-4 overflow-x-auto custom-scrollbar pb-4 pt-2">
                     <div class="text-center w-full text-slate-400 py-6"><i class="fa-solid fa-circle-notch fa-spin text-3xl text-emerald-500 mb-2"></i><br>Rendering pages...</div>
-                </div>
+                </div>` : ''}
             `;
             previewContainer.classList.remove('hidden');
 
-            try {
-                const fileUrl = URL.createObjectURL(file);
-                const pdf = await pdfjsLib.getDocument(fileUrl).promise;
-                const grid = document.getElementById('pdf-pages-grid');
-                grid.innerHTML = '';
+            if(toolId !== 'word2pdf') {
+                try {
+                    const fileUrl = URL.createObjectURL(file);
+                    const pdf = await pdfjsLib.getDocument(fileUrl).promise;
+                    const grid = document.getElementById('pdf-pages-grid');
+                    grid.innerHTML = '';
 
-                // Render up to 15 pages for the preview strip
-                const maxPages = Math.min(pdf.numPages, 15);
-                for (let i = 1; i <= maxPages; i++) {
-                    const page = await pdf.getPage(i);
-                    const viewport = page.getViewport({ scale: 1.0 });
-                    const scaledViewport = page.getViewport({ scale: 150 / viewport.width });
+                    const maxPages = Math.min(pdf.numPages, 15);
+                    for (let i = 1; i <= maxPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const viewport = page.getViewport({ scale: 1.0 });
+                        const scaledViewport = page.getViewport({ scale: 150 / viewport.width });
+                        
+                        const canvas = document.createElement('canvas');
+                        canvas.className = "pdf-canvas-render bg-white";
+                        canvas.height = scaledViewport.height;
+                        canvas.width = scaledViewport.width;
+                        await page.render({ canvasContext: canvas.getContext('2d'), viewport: scaledViewport }).promise;
+
+                        const div = document.createElement('div');
+                        div.className = "flex-shrink-0 flex flex-col items-center gap-2 group";
+                        div.innerHTML = `<div class="canvas-wrapper relative group-hover:shadow-md transition-all">${canvas.outerHTML}</div><span class="text-xs font-bold text-slate-500">Page ${i}</span>`;
+                        grid.appendChild(div);
+                    }
                     
-                    const canvas = document.createElement('canvas');
-                    canvas.className = "pdf-canvas-render bg-white";
-                    canvas.height = scaledViewport.height;
-                    canvas.width = scaledViewport.width;
-                    await page.render({ canvasContext: canvas.getContext('2d'), viewport: scaledViewport }).promise;
-
-                    const div = document.createElement('div');
-                    div.className = "flex-shrink-0 flex flex-col items-center gap-2 group";
-                    div.innerHTML = `<div class="canvas-wrapper relative group-hover:shadow-md transition-all">${canvas.outerHTML}</div><span class="text-xs font-bold text-slate-500">Page ${i}</span>`;
-                    grid.appendChild(div);
+                    if(pdf.numPages > 15) {
+                        const moreDiv = document.createElement('div');
+                        moreDiv.className = "flex-shrink-0 w-32 bg-slate-50 border-2 border-dashed border-slate-200 rounded flex flex-col items-center justify-center text-slate-400 font-bold text-sm";
+                        moreDiv.innerHTML = `<i class="fa-solid fa-plus mb-1 text-xl"></i> ${pdf.numPages - 15} more`;
+                        grid.appendChild(moreDiv);
+                    }
+                    URL.revokeObjectURL(fileUrl);
+                } catch(e) {
+                    document.getElementById('pdf-pages-grid').innerHTML = '<span class="text-sm text-red-500"><i class="fa-solid fa-triangle-exclamation"></i> Could not render visual preview for this encrypted/scanned file.</span>';
                 }
-                
-                if(pdf.numPages > 15) {
-                    const moreDiv = document.createElement('div');
-                    moreDiv.className = "flex-shrink-0 w-32 bg-slate-50 border-2 border-dashed border-slate-200 rounded flex flex-col items-center justify-center text-slate-400 font-bold text-sm";
-                    moreDiv.innerHTML = `<i class="fa-solid fa-plus mb-1 text-xl"></i> ${pdf.numPages - 15} more`;
-                    grid.appendChild(moreDiv);
-                }
-                URL.revokeObjectURL(fileUrl);
-            } catch(e) {
-                document.getElementById('pdf-pages-grid').innerHTML = '<span class="text-sm text-red-500"><i class="fa-solid fa-triangle-exclamation"></i> Could not render visual preview for this encrypted/scanned file.</span>';
             }
         }
 
@@ -397,7 +392,6 @@
                 div.className = "flex items-stretch bg-white rounded-xl border border-slate-200 cursor-grab active:cursor-grabbing hover:border-emerald-500 shadow-sm hover:shadow-md transition-all group overflow-hidden h-36";
                 div.dataset.id = fileId;
                 
-                // Skeleton loading state for the thumbnail
                 div.innerHTML = `
                     <div class="pdf-cover-container w-28 bg-slate-100 flex-shrink-0 flex items-center justify-center border-r border-slate-200 relative overflow-hidden p-2">
                         <i class="fa-solid fa-circle-notch fa-spin text-slate-300 text-2xl"></i>
@@ -412,7 +406,6 @@
                 `;
                 thumbContainer.appendChild(div);
 
-                // Async render the exact cover of each PDF
                 try {
                     const result = await renderPdfPageToCanvas(file, 1, 100);
                     const coverContainer = div.querySelector('.pdf-cover-container');
@@ -471,7 +464,7 @@
                 stepProcess.className = "flex flex-col items-center gap-3 transition-colors duration-300 w-24 text-emerald-500";
                 stepDownload.className = "flex flex-col items-center gap-3 transition-colors duration-300 w-24 text-emerald-600 pulse-emerald";
 
-                let filename = "vault_export.pdf";
+                let filename = "bytemorph_export.pdf";
                 const disposition = response.headers.get('Content-Disposition');
                 if (disposition && disposition.indexOf('filename=') !== -1) {
                     const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);

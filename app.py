@@ -3,11 +3,15 @@ from werkzeug.utils import secure_filename
 import fitz  # PyMuPDF
 import io
 import zipfile
+import os
+import tempfile
+from pdf2docx import Converter
+from docx2pdf import convert as convert_docx
 
 app = Flask(__name__)
 
 # --- SECURITY HELPERS ---
-ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg'}
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'docx'}
 
 def allowed_file(filename, allowed_types=None):
     if not allowed_types:
@@ -15,9 +19,8 @@ def allowed_file(filename, allowed_types=None):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in allowed_types
 
 def get_safe_name(filename):
-    """Extracts the base name, secures it, and provides a fallback if stripped."""
     safe = secure_filename(filename.rsplit('.', 1)[0])
-    return safe if safe else "vault_document"
+    return safe if safe else "bytemorph_document"
 
 @app.route('/')
 def home():
@@ -111,8 +114,6 @@ def split_pdf():
 
     try:
         doc = fitz.open(stream=file.read(), filetype="pdf")
-        
-        # Bounds checking to prevent crashes on bad user input
         start = max(0, int(request.form.get('start', 1)) - 1)
         end = max(0, int(request.form.get('end', 1)) - 1)
         if end < start: end = start
@@ -189,7 +190,79 @@ def unlock_pdf():
     except Exception:
         return "Failed to unlock document", 500
 
+@app.route('/api/add-watermark', methods=['POST'])
+def add_watermark():
+    file = request.files.get('file')
+    if not file or not allowed_file(file.filename, {'pdf'}): return "Invalid file", 400
+
+    try:
+        watermark_text = request.form.get('watermark_text', 'CONFIDENTIAL')
+        doc = fitz.open(stream=file.read(), filetype="pdf")
+        
+        for page in doc:
+            rect = page.rect
+            p = fitz.Point(rect.width / 4, rect.height / 2)
+            page.insert_text(p, watermark_text, fontsize=60, color=(0.8, 0.2, 0.2), fill_opacity=0.3, rotate=-45)
+            
+        buffer = io.BytesIO()
+        doc.save(buffer)
+        doc.close()
+        buffer.seek(0)
+        
+        safe_name = get_safe_name(file.filename)
+        return send_file(buffer, mimetype='application/pdf', as_attachment=True, download_name=f"{safe_name}_watermarked.pdf")
+    except Exception:
+        return "Failed to add watermark", 500
+
+@app.route('/api/pdf-to-word', methods=['POST'])
+def pdf_to_word():
+    file = request.files.get('file')
+    if not file or not allowed_file(file.filename, {'pdf'}): return "Invalid file", 400
+
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_pdf:
+            file.save(tmp_pdf.name)
+            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp_docx:
+                cv = Converter(tmp_pdf.name)
+                cv.convert(tmp_docx.name)
+                cv.close()
+                
+                with open(tmp_docx.name, "rb") as f:
+                    buffer = io.BytesIO(f.read())
+                    
+        os.remove(tmp_pdf.name)
+        os.remove(tmp_docx.name)
+        
+        buffer.seek(0)
+        safe_name = get_safe_name(file.filename)
+        return send_file(buffer, mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document', as_attachment=True, download_name=f"{safe_name}_converted.docx")
+    except Exception:
+        return "Failed to convert to Word", 500
+
+@app.route('/api/word-to-pdf', methods=['POST'])
+def word_to_pdf():
+    file = request.files.get('file')
+    if not file or not allowed_file(file.filename, {'docx'}): return "Invalid file", 400
+
+    try:
+        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp_docx:
+            file.save(tmp_docx.name)
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_pdf:
+                convert_docx(os.path.abspath(tmp_docx.name), os.path.abspath(tmp_pdf.name))
+                
+                with open(tmp_pdf.name, "rb") as f:
+                    buffer = io.BytesIO(f.read())
+                    
+        os.remove(tmp_docx.name)
+        os.remove(tmp_pdf.name)
+        
+        buffer.seek(0)
+        safe_name = get_safe_name(file.filename)
+        return send_file(buffer, mimetype='application/pdf', as_attachment=True, download_name=f"{safe_name}_converted.pdf")
+    except Exception as e:
+        return "Failed to convert Word. Ensure Microsoft Word is installed on your PC.", 500
+
 if __name__ == '__main__':
     from waitress import serve
-    print("VaultPDF Server Running on http://localhost:5000")
+    print("ByteMorph Server Running on http://localhost:5000")
     serve(app, host="0.0.0.0", port=5000)
