@@ -30,7 +30,7 @@ ByteMorph currently includes 11 powerful document utilities:
 ## 🛠️ Tech Stack
 
 **Backend:**
-* Python 3.x
+* Python 3.12
 * [Flask](https://flask.palletsprojects.com/) (Web Framework)
 * [PyMuPDF / fitz](https://pymupdf.readthedocs.io/) (High-performance PDF engine)
 * [Waitress](https://docs.pylonsproject.org/projects/waitress/en/latest/) (Production-grade WSGI server)
