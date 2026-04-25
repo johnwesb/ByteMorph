@@ -1,0 +1,5 @@
+Flask
+PyMuPDF
+waitress
+werkzeug
+pdf2docx

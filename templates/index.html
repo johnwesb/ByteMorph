@@ -1,0 +1,533 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VaultPDF - Secure & Local</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+    <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
+
+    <style>
+        .fade-enter { opacity: 0; transform: translateY(10px); }
+        .fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.3s ease-out; }
+        
+        .custom-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f8fafc; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #f8fafc; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+        
+        .sortable-ghost-img { opacity: 0.3; border: 4px dashed #10b981; border-radius: 0.75rem; transform: scale(0.95); }
+        .sortable-ghost-doc { opacity: 0.3; border: 2px dashed #10b981; background: #ecfdf5; }
+        
+        .pulse-emerald { animation: pulse-emerald 1.5s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        @keyframes pulse-emerald { 0%, 100% { opacity: 1; color: #059669; } 50% { opacity: .5; color: #34d399; } }
+
+        /* Canvas styling for generated PDF pages */
+        .pdf-canvas-render { box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06); border: 1px solid #e2e8f0; }
+    </style>
+</head>
+<body class="bg-[#f5f5fa] text-slate-800 font-sans min-h-screen flex flex-col">
+
+    <nav class="bg-white border-b border-slate-200 sticky top-0 z-50 shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="closeWorkspace()">
+                <div class="bg-emerald-600 text-white w-8 h-8 rounded flex items-center justify-center shadow-md">
+                    <i class="fa-solid fa-vault"></i>
+                </div>
+                <span class="text-2xl font-extrabold text-slate-800 tracking-tight">Vault<span class="text-emerald-600 font-bold">PDF</span></span>
+            </div>
+            
+            <div class="hidden md:flex space-x-8 text-sm font-semibold text-slate-600">
+                <a href="#" onclick="closeWorkspace()" class="hover:text-emerald-600 transition-colors">All Tools</a>
+                <span class="text-emerald-600 bg-emerald-50 px-3 py-1 rounded-full text-xs border border-emerald-100 flex items-center gap-1">
+                    <i class="fa-solid fa-shield-check"></i> 100% Offline Mode
+                </span>
+            </div>
+
+            <button id="backBtn" onclick="closeWorkspace()" class="hidden bg-slate-100 hover:bg-slate-200 text-slate-700 font-semibold py-1.5 px-4 rounded transition-colors items-center text-sm shadow-sm">
+                <i class="fa-solid fa-arrow-left mr-2"></i> Back
+            </button>
+        </div>
+    </nav>
+
+    <main class="flex-grow w-full pb-16">
+        
+        <div id="dashboard-view" class="fade-enter-active">
+            <div class="bg-white py-16 mb-12 border-b border-slate-200 text-center px-4 shadow-sm">
+                <h1 class="text-4xl md:text-5xl font-extrabold text-slate-800 mb-4 tracking-tight">Your Offline PDF Workspace</h1>
+                <p class="text-xl text-slate-500 max-w-2xl mx-auto">Zero cloud uploads. Zero data collection. Maximum privacy.</p>
+            </div>
+
+            <div class="max-w-7xl mx-auto px-4">
+                <h3 class="text-sm font-bold text-slate-400 mb-6 uppercase tracking-widest text-center">Available Tools</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4" id="launcher-grid"></div>
+            </div>
+        </div>
+
+        <div id="workspace-view" class="hidden flex flex-col items-center">
+            <div class="bg-[#1e293b] text-white py-10 mb-8 px-4 border-b-4 border-emerald-500 w-full" id="workspace-hero"></div>
+            <div class="max-w-7xl w-full mx-auto px-4" id="workspace-container"></div>
+        </div>
+
+    </main>
+
+    <script>
+        const tools = [
+            { id: 'pdf2img', title: 'PDF to Image', desc: 'Convert pages to JPG/PNG', icon: 'fa-file-image text-emerald-500', api: '/api/pdf-to-image', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', optionsHtml: '' },
+            { id: 'merge', title: 'Merge PDFs', desc: 'Combine documents in order', icon: 'fa-layer-group text-purple-500', api: '/api/merge-pdfs', accept: '.pdf', multiple: true, dropText: 'Upload PDF files', optionsHtml: '<div id="merge-sort-ui" class="hidden flex-grow flex flex-col w-full"><div id="merge-thumbnails" class="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto custom-scrollbar flex-grow p-2" style="max-height: 60vh;"></div></div>' },
+            { id: 'img2pdf', title: 'Images to PDF', desc: 'Turn photos into a PDF', icon: 'fa-images text-blue-500', api: '/api/images-to-pdf', accept: 'image/png, image/jpeg, image/jpg', multiple: true, dropText: 'Upload Images', optionsHtml: '<div id="img2pdf-sort-ui" class="hidden flex-grow flex flex-col w-full"><div id="img2pdf-thumbnails" class="flex flex-wrap gap-6 overflow-y-auto custom-scrollbar flex-grow content-start justify-center p-4 bg-slate-50 rounded-xl border border-slate-200" style="max-height: 60vh;"></div></div>' },
+            { id: 'extract', title: 'Extract Text', desc: 'Pull raw text out of PDFs', icon: 'fa-file-lines text-orange-500', api: '/api/extract-text', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', optionsHtml: '' },
+            { id: 'split', title: 'Split PDF', desc: 'Extract specific pages', icon: 'fa-scissors text-red-500', api: '/api/split-pdf', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', optionsHtml: '<div class="flex gap-6"><div class="w-1/2"><label class="text-sm font-bold text-slate-700">Start Page</label><input type="number" name="start" min="1" class="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-emerald-500 outline-none text-lg mt-2 transition-colors" value="1" required></div><div class="w-1/2"><label class="text-sm font-bold text-slate-700">End Page</label><input type="number" name="end" min="1" class="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-emerald-500 outline-none text-lg mt-2 transition-colors" value="1" required></div></div>' },
+            { id: 'rotate', title: 'Rotate PDF', desc: 'Fix page orientation', icon: 'fa-rotate-right text-indigo-500', api: '/api/rotate-pdf', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', optionsHtml: '<div><label class="text-sm font-bold text-slate-700">Rotation Angle</label><select name="angle" class="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-emerald-500 outline-none text-lg mt-2 transition-colors"><option value="90">90 Degrees Clockwise</option><option value="180">180 Degrees</option><option value="270">90 Degrees Counter-Clockwise</option></select></div>' },
+            { id: 'protect', title: 'Protect PDF', desc: 'Add AES encryption', icon: 'fa-lock text-slate-600', api: '/api/protect-pdf', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', optionsHtml: '<div><label class="text-sm font-bold text-slate-700">Set Password</label><input type="password" name="password" placeholder="••••••••" class="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-emerald-500 outline-none text-lg mt-2 transition-colors" required></div>' },
+            { id: 'unlock', title: 'Unlock PDF', desc: 'Remove password', icon: 'fa-unlock text-emerald-600', api: '/api/unlock-pdf', accept: '.pdf', multiple: false, dropText: 'Upload Protected PDF', optionsHtml: '<div><label class="text-sm font-bold text-slate-700">Current Password</label><input type="password" name="password" placeholder="••••••••" class="w-full p-3 border-2 border-slate-200 rounded-lg focus:border-emerald-500 outline-none text-lg mt-2 transition-colors" required></div>' }
+        ];
+
+        const activeFileMaps = { 'img2pdf': new Map(), 'merge': new Map() };
+        let currentToolId = null;
+
+        // Initialize Dashboard Launcher
+        const launcherGrid = document.getElementById('launcher-grid');
+        tools.forEach(tool => {
+            launcherGrid.innerHTML += `
+                <div onclick="openWorkspace('${tool.id}')" class="bg-white rounded-lg border border-slate-200 hover:border-emerald-500 p-5 flex items-center cursor-pointer transition-all shadow-sm hover:shadow-md">
+                    <div class="text-3xl mr-4 w-10 text-center"><i class="fa-solid ${tool.icon}"></i></div>
+                    <div>
+                        <h3 class="text-base font-bold text-slate-800">${tool.title}</h3>
+                        <p class="text-xs text-slate-500 mt-1">${tool.desc}</p>
+                    </div>
+                </div>
+            `;
+        });
+
+        function openWorkspace(id) {
+            currentToolId = id;
+            const tool = tools.find(t => t.id === id);
+            
+            document.getElementById('dashboard-view').classList.add('hidden');
+            document.getElementById('workspace-view').classList.remove('hidden');
+            document.getElementById('backBtn').classList.remove('hidden');
+            document.getElementById('backBtn').classList.add('flex');
+
+            document.getElementById('workspace-hero').innerHTML = `
+                <div class="max-w-4xl mx-auto text-center">
+                    <i class="fa-solid ${tool.icon.replace('text-', 'text-emerald-400 opacity-80 text-')} text-5xl mb-4 bg-slate-800 p-4 rounded-full shadow-inner border border-slate-700"></i>
+                    <h2 class="text-3xl font-extrabold mb-2 text-white">${tool.title}</h2>
+                    <p class="text-slate-400 text-lg">${tool.desc}</p>
+                </div>
+            `;
+
+            const workspace = document.getElementById('workspace-container');
+            workspace.innerHTML = `
+                <form id="workspace-form" class="flex flex-col w-full max-w-6xl mx-auto -mt-16 relative z-10" onsubmit="handleProcess(event, '${tool.id}', '${tool.api}')">
+                    
+                    <div id="workspace-dropzone" class="mb-8 w-full max-w-3xl mx-auto">
+                        <div id="dropzone-box" class="border-2 border-dashed border-slate-300 bg-white rounded-2xl p-20 text-center transition-all relative cursor-pointer group shadow-sm hover:shadow-md hover:border-emerald-400"
+                            ondragover="event.preventDefault(); this.classList.add('border-emerald-500', 'bg-emerald-50', 'scale-[1.02]'); this.classList.remove('border-slate-300', 'bg-white');"
+                            ondragleave="event.preventDefault(); this.classList.remove('border-emerald-500', 'bg-emerald-50', 'scale-[1.02]'); this.classList.add('border-slate-300', 'bg-white');"
+                            ondrop="event.preventDefault(); this.classList.remove('border-emerald-500', 'bg-emerald-50', 'scale-[1.02]'); this.classList.add('border-slate-300', 'bg-white'); document.getElementById('main-file-input').files = event.dataTransfer.files; handleFileSelection(document.getElementById('main-file-input'), '${tool.id}');">
+                            
+                            <input type="file" id="main-file-input" name="${tool.multiple ? 'files' : 'file'}" accept="${tool.accept}" ${tool.multiple ? 'multiple' : ''} onchange="handleFileSelection(this, '${tool.id}')" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20" required>
+                            <span class="bg-emerald-600 group-hover:bg-emerald-500 transition-colors text-white px-10 py-5 rounded-full font-extrabold text-xl shadow-md pointer-events-none inline-flex items-center">
+                                <i class="fa-solid fa-upload mr-3 text-2xl"></i>${tool.dropText}
+                            </span>
+                            <p class="mt-6 text-slate-400 font-medium pointer-events-none text-lg">or drag and drop files here</p>
+                            <p id="dropzone-error" class="text-red-500 font-bold mt-4 hidden"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Invalid file type uploaded.</p>
+                        </div>
+                    </div>
+
+                    <div id="workspace-options" class="hidden w-full ${tool.id === 'img2pdf' || toolId === 'merge' ? 'max-w-6xl' : 'max-w-3xl'} mx-auto bg-white p-8 md:p-10 rounded-2xl shadow-xl border border-slate-200">
+                        <h3 class="text-2xl font-extrabold text-slate-800 mb-6 pb-4 border-b border-slate-100 flex items-center">
+                            <i class="fa-solid fa-sliders mr-3 text-emerald-500"></i> Configure Task
+                        </h3>
+                        
+                        <div id="generic-file-preview" class="hidden mb-6"></div>
+                        ${tool.optionsHtml}
+
+                        <div class="mt-8 pt-6 border-t border-slate-100 flex gap-4">
+                            <button type="button" onclick="resetWorkspace()" class="w-1/3 bg-slate-100 text-slate-600 text-lg font-bold py-5 px-6 rounded-xl hover:bg-slate-200 hover:text-slate-800 transition-colors">
+                                Change File
+                            </button>
+                            <button type="submit" id="btn-process" class="w-2/3 bg-emerald-600 text-white text-xl font-bold py-5 px-6 rounded-xl hover:bg-emerald-700 transition-transform hover:scale-[1.01] flex justify-center items-center shadow-lg">
+                                <span>Execute Task <i class="fa-solid fa-arrow-right ml-2"></i></span>
+                            </button>
+                        </div>
+                        <p id="workspace-error" class="text-red-500 font-semibold mt-4 hidden text-center bg-red-50 p-4 rounded-lg border border-red-100"></p>
+                    </div>
+                </form>
+
+                <div id="workspace-loading" class="bg-white p-16 rounded-3xl shadow-2xl border border-slate-200 text-center hidden -mt-16 max-w-3xl mx-auto relative z-20">
+                    <div class="w-24 h-24 mx-auto mb-8 text-6xl text-emerald-500 flex items-center justify-center">
+                        <i id="loading-spinner" class="fa-solid fa-circle-notch fa-spin"></i>
+                    </div>
+                    <h4 id="loading-title" class="font-extrabold text-4xl text-slate-800 mb-3">Processing...</h4>
+                    <p id="loading-desc" class="text-xl text-slate-500 mb-12">Please wait while VaultPDF secures your files.</p>
+                    
+                    <div class="flex justify-center items-center gap-6 text-lg font-bold text-slate-300">
+                        <div id="step-upload" class="flex flex-col items-center gap-3 transition-colors duration-300 w-24">
+                            <i class="fa-solid fa-cloud-arrow-up text-4xl mb-1"></i> <span>Uploading</span>
+                        </div>
+                        <div class="w-16 h-1 bg-slate-200 mb-8 rounded-full"></div>
+                        <div id="step-process" class="flex flex-col items-center gap-3 transition-colors duration-300 w-24">
+                            <i class="fa-solid fa-gears text-4xl mb-1"></i> <span>Modifying</span>
+                        </div>
+                        <div class="w-16 h-1 bg-slate-200 mb-8 rounded-full"></div>
+                        <div id="step-download" class="flex flex-col items-center gap-3 transition-colors duration-300 w-24">
+                            <i class="fa-solid fa-file-arrow-down text-4xl mb-1"></i> <span>Downloading</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="workspace-success" class="bg-white p-12 rounded-2xl shadow-xl border border-slate-200 text-center hidden -mt-16 max-w-3xl mx-auto relative z-20">
+                    <div class="w-24 h-24 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6 text-5xl shadow-inner">
+                        <i class="fa-solid fa-check"></i>
+                    </div>
+                    <h4 class="font-bold text-4xl text-slate-800 mb-3">Vault Task Completed</h4>
+                    <p class="text-xl text-slate-500 mb-10">Your secure file is ready for download.</p>
+                    
+                    <a id="workspace-download" href="#" class="bg-emerald-600 text-white text-xl font-bold py-5 px-12 rounded-xl hover:bg-emerald-700 transition-colors mb-4 shadow-lg flex items-center justify-center w-full md:w-auto md:inline-flex">
+                        <i class="fa-solid fa-download mr-3"></i> Download Secure File
+                    </a>
+                    <div class="mt-8">
+                        <button type="button" onclick="resetWorkspace()" class="text-slate-400 hover:text-emerald-600 transition-colors font-bold text-sm uppercase tracking-widest">
+                            Process Another File
+                        </button>
+                    </div>
+                </div>
+            `;
+        }
+
+        function validateFiles(files, toolId) {
+            const tool = tools.find(t => t.id === toolId);
+            if (!tool.accept) return true;
+            
+            const acceptedTypes = tool.accept.split(',').map(t => t.trim().toLowerCase());
+            for (let i = 0; i < files.length; i++) {
+                const fileName = files[i].name.toLowerCase();
+                const fileType = files[i].type.toLowerCase();
+                
+                let isValid = false;
+                for (let type of acceptedTypes) {
+                    if (type.startsWith('.')) {
+                        if (fileName.endsWith(type)) isValid = true;
+                    } else if (type.endsWith('/*')) {
+                        const baseType = type.split('/')[0];
+                        if (fileType.startsWith(baseType + '/')) isValid = true;
+                    } else {
+                        if (fileType === type) isValid = true;
+                    }
+                }
+                if (!isValid) return false;
+            }
+            return true;
+        }
+
+        function handleFileSelection(inputElement, toolId) {
+            if (inputElement.files.length === 0) return;
+            
+            const errorElement = document.getElementById('dropzone-error');
+            errorElement.classList.add('hidden');
+
+            if (!validateFiles(inputElement.files, toolId)) {
+                errorElement.innerText = "Invalid file type. Please upload the correct format.";
+                errorElement.classList.remove('hidden');
+                inputElement.value = ''; 
+                return;
+            }
+
+            const dropzone = document.getElementById('workspace-dropzone');
+            const optionsArea = document.getElementById('workspace-options');
+            const loadingView = document.getElementById('workspace-loading');
+            
+            const stepUpload = document.getElementById('step-upload');
+            const loadingTitle = document.getElementById('loading-title');
+            const loadingDesc = document.getElementById('loading-desc');
+
+            loadingTitle.innerText = "Reading Files...";
+            loadingDesc.innerText = "Securely loading documents into local memory.";
+            stepUpload.className = "flex flex-col items-center gap-3 transition-colors duration-300 w-24 text-emerald-600 pulse-emerald";
+
+            dropzone.classList.add('hidden');
+            loadingView.classList.remove('hidden');
+
+            // Allow UI to breathe before heavy canvas rendering
+            setTimeout(() => {
+                if (toolId === 'img2pdf') generateImageUI(inputElement);
+                else if (toolId === 'merge') generateMergeUI(inputElement);
+                else generateSingleFileUI(inputElement);
+
+                stepUpload.className = "flex flex-col items-center gap-3 transition-colors duration-300 w-24 text-emerald-500";
+                loadingView.classList.add('hidden');
+                optionsArea.classList.remove('hidden');
+            }, 800); 
+        }
+
+        // ==========================================
+        // NEW PDF.JS RENDERING ENGINE 
+        // ==========================================
+        
+        async function renderPdfPageToCanvas(file, pageNum = 1, targetWidth = 200) {
+            const fileUrl = URL.createObjectURL(file);
+            const pdf = await pdfjsLib.getDocument(fileUrl).promise;
+            const page = await pdf.getPage(pageNum);
+            
+            const viewport = page.getViewport({ scale: 1.0 });
+            const scale = targetWidth / viewport.width;
+            const scaledViewport = page.getViewport({ scale: scale });
+            
+            const canvas = document.createElement('canvas');
+            canvas.className = "pdf-canvas-render mx-auto max-w-full h-auto";
+            canvas.height = scaledViewport.height;
+            canvas.width = scaledViewport.width;
+            
+            await page.render({ canvasContext: canvas.getContext('2d'), viewport: scaledViewport }).promise;
+            URL.revokeObjectURL(fileUrl);
+            return { canvas: canvas, totalPages: pdf.numPages };
+        }
+
+        async function generateSingleFileUI(inputElement) {
+            const previewContainer = document.getElementById('generic-file-preview');
+            const file = inputElement.files[0];
+            if(!file) return;
+
+            // Show a basic header
+            previewContainer.innerHTML = `
+                <div class="flex items-center gap-4 mb-4 pb-4 border-b border-slate-100">
+                    <div class="text-red-500 text-3xl"><i class="fa-solid fa-file-pdf"></i></div>
+                    <div class="flex-grow truncate">
+                        <h4 class="font-bold text-slate-800 text-lg truncate">${file.name}</h4>
+                        <p class="text-xs text-slate-500">${(file.size / 1024 / 1024).toFixed(2)} MB</p>
+                    </div>
+                </div>
+                <div id="pdf-pages-grid" class="flex gap-4 overflow-x-auto custom-scrollbar pb-4 pt-2">
+                    <div class="text-center w-full text-slate-400 py-6"><i class="fa-solid fa-circle-notch fa-spin text-3xl text-emerald-500 mb-2"></i><br>Rendering pages...</div>
+                </div>
+            `;
+            previewContainer.classList.remove('hidden');
+
+            try {
+                const fileUrl = URL.createObjectURL(file);
+                const pdf = await pdfjsLib.getDocument(fileUrl).promise;
+                const grid = document.getElementById('pdf-pages-grid');
+                grid.innerHTML = '';
+
+                // Render up to 15 pages for the preview strip
+                const maxPages = Math.min(pdf.numPages, 15);
+                for (let i = 1; i <= maxPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const viewport = page.getViewport({ scale: 1.0 });
+                    const scaledViewport = page.getViewport({ scale: 150 / viewport.width });
+                    
+                    const canvas = document.createElement('canvas');
+                    canvas.className = "pdf-canvas-render bg-white";
+                    canvas.height = scaledViewport.height;
+                    canvas.width = scaledViewport.width;
+                    await page.render({ canvasContext: canvas.getContext('2d'), viewport: scaledViewport }).promise;
+
+                    const div = document.createElement('div');
+                    div.className = "flex-shrink-0 flex flex-col items-center gap-2 group";
+                    div.innerHTML = `<div class="canvas-wrapper relative group-hover:shadow-md transition-all">${canvas.outerHTML}</div><span class="text-xs font-bold text-slate-500">Page ${i}</span>`;
+                    grid.appendChild(div);
+                }
+                
+                if(pdf.numPages > 15) {
+                    const moreDiv = document.createElement('div');
+                    moreDiv.className = "flex-shrink-0 w-32 bg-slate-50 border-2 border-dashed border-slate-200 rounded flex flex-col items-center justify-center text-slate-400 font-bold text-sm";
+                    moreDiv.innerHTML = `<i class="fa-solid fa-plus mb-1 text-xl"></i> ${pdf.numPages - 15} more`;
+                    grid.appendChild(moreDiv);
+                }
+                URL.revokeObjectURL(fileUrl);
+            } catch(e) {
+                document.getElementById('pdf-pages-grid').innerHTML = '<span class="text-sm text-red-500"><i class="fa-solid fa-triangle-exclamation"></i> Could not render visual preview for this encrypted/scanned file.</span>';
+            }
+        }
+
+        function generateImageUI(inputElement) {
+            const uiContainer = document.getElementById('img2pdf-sort-ui');
+            const thumbContainer = document.getElementById('img2pdf-thumbnails');
+            thumbContainer.innerHTML = '';
+            activeFileMaps['img2pdf'].clear();
+
+            if (inputElement.files.length === 0) { uiContainer.classList.add('hidden'); return; }
+            uiContainer.classList.remove('hidden');
+
+            Array.from(inputElement.files).forEach((file, index) => {
+                const fileId = `img_${Date.now()}_${index}`;
+                activeFileMaps['img2pdf'].set(fileId, file);
+
+                const div = document.createElement('div');
+                div.className = "w-64 aspect-[3/4] rounded-xl overflow-hidden cursor-grab active:cursor-grabbing border-2 border-slate-200 hover:border-emerald-500 relative group bg-white shadow-sm hover:shadow-lg transition-all flex flex-col p-2";
+                div.dataset.id = fileId;
+
+                const imgUrl = URL.createObjectURL(file);
+                div.innerHTML = `
+                    <div class="flex-grow flex items-center justify-center overflow-hidden mb-8 bg-slate-100 rounded-lg p-2">
+                        <img src="${imgUrl}" class="max-w-full max-h-full object-contain pointer-events-none drop-shadow-sm" onload="URL.revokeObjectURL(this.src)">
+                    </div>
+                    <div class="absolute bottom-0 left-0 right-0 bg-slate-800 text-white text-xs truncate px-3 py-2 text-center pointer-events-none border-t border-slate-700">
+                        ${file.name}
+                    </div>
+                    <div class="absolute inset-0 bg-emerald-600/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white pointer-events-none rounded-xl">
+                        <i class="fa-solid fa-arrows-up-down-left-right text-4xl drop-shadow-md"></i>
+                    </div>
+                `;
+                thumbContainer.appendChild(div);
+            });
+            new Sortable(thumbContainer, { animation: 200, ghostClass: 'sortable-ghost-img' });
+        }
+
+        function generateMergeUI(inputElement) {
+            const uiContainer = document.getElementById('merge-sort-ui');
+            const thumbContainer = document.getElementById('merge-thumbnails');
+            thumbContainer.innerHTML = '';
+            activeFileMaps['merge'].clear();
+
+            if (inputElement.files.length === 0) { uiContainer.classList.add('hidden'); return; }
+            uiContainer.classList.remove('hidden');
+
+            Array.from(inputElement.files).forEach(async (file, index) => {
+                const fileId = `pdf_${Date.now()}_${index}`;
+                activeFileMaps['merge'].set(fileId, file);
+
+                const div = document.createElement('div');
+                div.className = "flex items-stretch bg-white rounded-xl border border-slate-200 cursor-grab active:cursor-grabbing hover:border-emerald-500 shadow-sm hover:shadow-md transition-all group overflow-hidden h-36";
+                div.dataset.id = fileId;
+                
+                // Skeleton loading state for the thumbnail
+                div.innerHTML = `
+                    <div class="pdf-cover-container w-28 bg-slate-100 flex-shrink-0 flex items-center justify-center border-r border-slate-200 relative overflow-hidden p-2">
+                        <i class="fa-solid fa-circle-notch fa-spin text-slate-300 text-2xl"></i>
+                    </div>
+                    <div class="flex-grow flex flex-col justify-center px-4 py-2 overflow-hidden">
+                        <div class="truncate text-base font-bold text-slate-700 mb-1">${file.name}</div>
+                        <div class="text-xs font-semibold text-slate-400 page-count-tag">Reading...</div>
+                    </div>
+                    <div class="text-slate-300 bg-slate-50 group-hover:bg-emerald-50 group-hover:text-emerald-500 transition-colors w-12 flex items-center justify-center flex-shrink-0 border-l border-slate-100">
+                        <i class="fa-solid fa-grip-vertical text-xl"></i>
+                    </div>
+                `;
+                thumbContainer.appendChild(div);
+
+                // Async render the exact cover of each PDF
+                try {
+                    const result = await renderPdfPageToCanvas(file, 1, 100);
+                    const coverContainer = div.querySelector('.pdf-cover-container');
+                    coverContainer.innerHTML = '';
+                    coverContainer.appendChild(result.canvas);
+                    div.querySelector('.page-count-tag').innerHTML = `<i class="fa-regular fa-file-lines mr-1"></i> ${result.totalPages} Pages`;
+                } catch(e) {
+                    div.querySelector('.pdf-cover-container').innerHTML = '<i class="fa-solid fa-file-pdf text-red-400 text-4xl"></i>';
+                    div.querySelector('.page-count-tag').innerHTML = "Preview Unavailable";
+                }
+            });
+            new Sortable(thumbContainer, { animation: 200, ghostClass: 'sortable-ghost-doc' });
+        }
+
+        async function handleProcess(event, toolId, apiEndpoint) {
+            event.preventDefault(); 
+            
+            const form = event.target;
+            const optionsArea = document.getElementById('workspace-options');
+            const loadingView = document.getElementById('workspace-loading');
+            const successView = document.getElementById('workspace-success');
+            const errorMsg = document.getElementById('workspace-error');
+            
+            const stepUpload = document.getElementById('step-upload');
+            const stepProcess = document.getElementById('step-process');
+            const stepDownload = document.getElementById('step-download');
+            const loadingTitle = document.getElementById('loading-title');
+            const loadingDesc = document.getElementById('loading-desc');
+
+            errorMsg.classList.add('hidden');
+
+            try {
+                let formData = new FormData(form);
+
+                if (toolId === 'img2pdf' || toolId === 'merge') {
+                    formData.delete('files'); 
+                    const sortedDivs = document.getElementById(`${toolId}-thumbnails`).children;
+                    for (let div of sortedDivs) {
+                        formData.append('files', activeFileMaps[toolId].get(div.dataset.id));
+                    }
+                }
+
+                optionsArea.classList.add('hidden');
+                loadingView.classList.remove('hidden');
+                
+                loadingTitle.innerText = "Modifying Document...";
+                loadingDesc.innerText = "Processing your request securely...";
+                stepUpload.className = "flex flex-col items-center gap-3 transition-colors duration-300 w-24 text-emerald-500";
+                stepProcess.className = "flex flex-col items-center gap-3 transition-colors duration-300 w-24 text-emerald-600 pulse-emerald";
+
+                const response = await fetch(apiEndpoint, { method: 'POST', body: formData });
+                if (!response.ok) throw new Error(await response.text());
+
+                loadingTitle.innerText = "Preparing Download...";
+                loadingDesc.innerText = "Finalizing your secure file export...";
+                stepProcess.className = "flex flex-col items-center gap-3 transition-colors duration-300 w-24 text-emerald-500";
+                stepDownload.className = "flex flex-col items-center gap-3 transition-colors duration-300 w-24 text-emerald-600 pulse-emerald";
+
+                let filename = "vault_export.pdf";
+                const disposition = response.headers.get('Content-Disposition');
+                if (disposition && disposition.indexOf('filename=') !== -1) {
+                    const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+                    if (matches != null && matches[1]) filename = matches[1].replace(/['"]/g, '');
+                }
+
+                const blob = await response.blob();
+                const downloadBtn = document.getElementById('workspace-download');
+                downloadBtn.href = window.URL.createObjectURL(blob);
+                downloadBtn.download = filename;
+                
+                setTimeout(() => {
+                    loadingView.classList.add('hidden');
+                    successView.classList.remove('hidden');
+                    stepDownload.className = "flex flex-col items-center gap-3 transition-colors duration-300 w-24 text-emerald-500";
+                }, 600);
+
+            } catch (error) {
+                loadingView.classList.add('hidden');
+                optionsArea.classList.remove('hidden');
+                errorMsg.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-2"></i> ${error.message || "A secure processing error occurred."}`;
+                errorMsg.classList.remove('hidden');
+            }
+        }
+
+        function closeWorkspace() {
+            document.getElementById('workspace-view').classList.add('hidden');
+            document.getElementById('dashboard-view').classList.remove('hidden');
+            document.getElementById('backBtn').classList.add('hidden');
+            document.getElementById('backBtn').classList.remove('flex');
+            
+            if(activeFileMaps['img2pdf']) activeFileMaps['img2pdf'].clear();
+            if(activeFileMaps['merge']) activeFileMaps['merge'].clear();
+            currentToolId = null;
+        }
+
+        function resetWorkspace() {
+            document.getElementById('workspace-form').reset();
+            document.getElementById('workspace-dropzone').classList.remove('hidden');
+            document.getElementById('workspace-options').classList.add('hidden');
+            document.getElementById('workspace-success').classList.add('hidden');
+            document.getElementById('workspace-loading').classList.add('hidden');
+            document.getElementById('generic-file-preview').classList.add('hidden');
+            
+            ['step-upload', 'step-process', 'step-download'].forEach(id => {
+                document.getElementById(id).className = "flex flex-col items-center gap-3 transition-colors duration-300 w-24 text-slate-300";
+            });
+
+            if (currentToolId === 'img2pdf' || currentToolId === 'merge') {
+                const ui = document.getElementById(`${currentToolId}-sort-ui`);
+                if(ui) ui.classList.add('hidden');
+                const thumb = document.getElementById(`${currentToolId}-thumbnails`);
+                if(thumb) thumb.innerHTML = '';
+                activeFileMaps[currentToolId].clear();
+            }
+        }
+    </script>
+</body>
+</html>
