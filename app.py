@@ -264,5 +264,23 @@ def word_to_pdf():
 
 if __name__ == '__main__':
     from waitress import serve
-    print("ByteMorph Server Running on http://localhost:5000")
-    serve(app, host="0.0.0.0", port=5000)
+    import webview
+    import threading
+    import time
+
+    def start_server():
+        # Waitress serves the Flask app silently in the background
+        serve(app, host="127.0.0.1", port=5000)
+
+    # 1. Start the backend server in a separate thread
+    t = threading.Thread(target=start_server)
+    t.daemon = True
+    t.start()
+
+    # 2. Give the server a split second to boot up
+    time.sleep(1)
+
+    # 3. Launch the native desktop window (No URL bar, no tabs!)
+    # text_select=False makes it feel like an app instead of a webpage
+    webview.create_window('ByteMorph', 'http://127.0.0.1:5000', width=1280, height=850, text_select=False)
+    webview.start()
