@@ -3,3 +3,5 @@ PyMuPDF
 waitress
 werkzeug
 pdf2docx
+docx2pdf
+pywebview
