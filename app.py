@@ -4,6 +4,7 @@ import fitz  # PyMuPDF
 import io
 import zipfile
 import os
+import sys
 import tempfile
 from pdf2docx import Converter
 from docx2pdf import convert as convert_docx
@@ -219,68 +220,93 @@ def pdf_to_word():
     file = request.files.get('file')
     if not file or not allowed_file(file.filename, {'pdf'}): return "Invalid file", 400
 
+    tmp_pdf = None
+    tmp_docx = None
     try:
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_pdf:
-            file.save(tmp_pdf.name)
-            with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp_docx:
-                cv = Converter(tmp_pdf.name)
-                cv.convert(tmp_docx.name)
-                cv.close()
-                
-                with open(tmp_docx.name, "rb") as f:
-                    buffer = io.BytesIO(f.read())
-                    
-        os.remove(tmp_pdf.name)
-        os.remove(tmp_docx.name)
+        # Secure file creation to prevent Windows permission crashes
+        fd1, tmp_pdf = tempfile.mkstemp(suffix=".pdf")
+        os.close(fd1)
+        fd2, tmp_docx = tempfile.mkstemp(suffix=".docx")
+        os.close(fd2)
+
+        file.save(tmp_pdf)
+        cv = Converter(tmp_pdf)
+        cv.convert(tmp_docx)
+        cv.close()
         
+        with open(tmp_docx, "rb") as f:
+            buffer = io.BytesIO(f.read())
+            
         buffer.seek(0)
         safe_name = get_safe_name(file.filename)
         return send_file(buffer, mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document', as_attachment=True, download_name=f"{safe_name}_converted.docx")
-    except Exception:
+    except Exception as e:
+        print("PDF to Word Error:", str(e))
         return "Failed to convert to Word", 500
+    finally:
+        # Safely clean up memory
+        if tmp_pdf and os.path.exists(tmp_pdf): os.remove(tmp_pdf)
+        if tmp_docx and os.path.exists(tmp_docx): os.remove(tmp_docx)
 
 @app.route('/api/word-to-pdf', methods=['POST'])
 def word_to_pdf():
     file = request.files.get('file')
     if not file or not allowed_file(file.filename, {'docx'}): return "Invalid file", 400
 
+    tmp_docx = None
+    tmp_pdf = None
     try:
-        with tempfile.NamedTemporaryFile(suffix=".docx", delete=False) as tmp_docx:
-            file.save(tmp_docx.name)
-            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp_pdf:
-                convert_docx(os.path.abspath(tmp_docx.name), os.path.abspath(tmp_pdf.name))
-                
-                with open(tmp_pdf.name, "rb") as f:
-                    buffer = io.BytesIO(f.read())
-                    
-        os.remove(tmp_docx.name)
-        os.remove(tmp_pdf.name)
+        # Initialize Windows COM thread securely
+        if sys.platform == "win32":
+            import pythoncom
+            pythoncom.CoInitialize()
+
+        fd1, tmp_docx = tempfile.mkstemp(suffix=".docx")
+        os.close(fd1)
+        fd2, tmp_pdf = tempfile.mkstemp(suffix=".pdf")
+        os.close(fd2)
+
+        file.save(tmp_docx)
+        convert_docx(os.path.abspath(tmp_docx), os.path.abspath(tmp_pdf))
         
+        with open(tmp_pdf, "rb") as f:
+            buffer = io.BytesIO(f.read())
+            
         buffer.seek(0)
         safe_name = get_safe_name(file.filename)
         return send_file(buffer, mimetype='application/pdf', as_attachment=True, download_name=f"{safe_name}_converted.pdf")
     except Exception as e:
+        print("Word to PDF Error:", str(e))
         return "Failed to convert Word. Ensure Microsoft Word is installed on your PC.", 500
+    finally:
+        # Un-initialize COM thread and clean files
+        if sys.platform == "win32":
+            try:
+                import pythoncom
+                pythoncom.CoUninitialize()
+            except: pass
+        if tmp_docx and os.path.exists(tmp_docx): os.remove(tmp_docx)
+        if tmp_pdf and os.path.exists(tmp_pdf): os.remove(tmp_pdf)
 
 if __name__ == '__main__':
     from waitress import serve
-    import webview
+    import webbrowser
     import threading
     import time
 
     def start_server():
-        # Waitress serves the Flask app silently in the background
         serve(app, host="127.0.0.1", port=5000)
 
-    # 1. Start the backend server in a separate thread
-    t = threading.Thread(target=start_server)
-    t.daemon = True
-    t.start()
-
-    # 2. Give the server a split second to boot up
+    # Start the server in the background
+    threading.Thread(target=start_server, daemon=True).start()
+    
+    # Wait a second for it to boot, then auto-open the browser
     time.sleep(1)
-
-    # 3. Launch the native desktop window (No URL bar, no tabs!)
-    # text_select=False makes it feel like an app instead of a webpage
-    webview.create_window('ByteMorph', 'http://127.0.0.1:5000', width=1280, height=850, text_select=False)
-    webview.start()
+    print("ByteMorph is running! Opening in your browser...")
+    webbrowser.open("http://127.0.0.1:5000")
+    
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\nShutting down ByteMorph...")

@@ -135,8 +135,8 @@
                            class="w-full p-4 border border-slate-300 dark:border-slate-600 rounded-2xl focus:border-emerald-500 outline-none text-lg bg-transparent">
                 </div>`
             },
-            { id: 'pdf2word', title: 'PDF to Word', desc: 'Convert PDF to DOCX', icon: 'fa-file-word text-blue-600', api: '/api/pdf-to-word', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', dropSubText: 'or drag & drop your PDF here', optionsHtml: '' },
-            { id: 'word2pdf', title: 'Word to PDF', desc: 'Convert DOCX to PDF', icon: 'fa-file-pdf text-red-600', api: '/api/word-to-pdf', accept: '.docx', multiple: false, dropText: 'Upload Word Document', dropSubText: 'or drag & drop your DOCX file here', optionsHtml: '' }
+            { id: 'pdf2word', title: 'PDF to Word', desc: 'Convert PDF to DOCX', icon: 'fa-file-word text-blue-600', api: '/api/pdf-to-word', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', dropSubText: 'or drag & drop your PDF here', optionsHtml: '<div class="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 p-4 rounded-xl flex items-center"><i class="fa-solid fa-circle-info text-2xl mr-4"></i><div><p class="font-bold">Layout Conversion</p><p class="text-sm">We will attempt to reconstruct the text, tables, and images into an editable Word document.</p></div></div>' },
+            { id: 'word2pdf', title: 'Word to PDF', desc: 'Convert DOCX to PDF', icon: 'fa-file-pdf text-red-600', api: '/api/word-to-pdf', accept: '.docx', multiple: false, dropText: 'Upload Word Document', dropSubText: 'or drag & drop your DOCX file here', optionsHtml: '<div class="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 p-4 rounded-xl flex items-center"><i class="fa-solid fa-circle-info text-2xl mr-4"></i><div><p class="font-bold">Requires MS Office</p><p class="text-sm">This tool uses Microsoft Word in the background of your PC to safely convert the document.</p></div></div>' }
         ];
 
         const activeFileMaps = { 'img2pdf': new Map(), 'merge': new Map() };
@@ -185,7 +185,7 @@
                     <div id="workspace-dropzone" class="mb-12">
                         <div id="dropzone-box" class="border-4 border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-3xl p-24 text-center transition-all hover:border-emerald-500 cursor-pointer group"
                              ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, '${tool.id}')">
-                            <input type="file" id="main-file-input" name="${tool.multiple ? 'files' : 'file'}" accept="${tool.accept}" ${tool.multiple ? 'multiple' : ''} onchange="handleFileSelection(this, '${tool.id}')" class="hidden">
+                            <input type="file" id="main-file-input" name="${tool.multiple ? 'files' : 'file'}" accept="${tool.accept}" ${tool.multiple ? 'multiple' : ''} onchange="handleFileSelection(this, '${tool.id}')" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20">
                             <div>
                                 <span class="inline-flex items-center gap-5 bg-emerald-600 text-white px-16 py-8 rounded-3xl text-2xl font-bold shadow-2xl group-hover:bg-emerald-700 transition-all pointer-events-none">
                                     <i class="fa-solid fa-upload"></i> ${tool.dropText}
@@ -203,8 +203,8 @@
                         ${tool.optionsHtml || ''}
                         
                         <div class="mt-12 flex gap-4">
-                            <button type="button" onclick="resetWorkspace()" class="flex-1 py-7 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-3xl font-bold text-lg transition-colors">Change File</button>
-                            <button type="submit" class="flex-1 py-7 bg-emerald-600 hover:bg-emerald-700 text-white rounded-3xl font-bold text-2xl shadow-xl transition-transform hover:-translate-y-1">Process Securely <i class="fa-solid fa-arrow-right ml-3"></i></button>
+                            <button type="button" onclick="resetWorkspace()" class="flex-1 py-7 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-3xl font-bold text-lg transition-colors z-30 relative">Change File</button>
+                            <button type="submit" class="flex-1 py-7 bg-emerald-600 hover:bg-emerald-700 text-white rounded-3xl font-bold text-2xl shadow-xl transition-transform hover:-translate-y-1 z-30 relative">Process Securely <i class="fa-solid fa-arrow-right ml-3"></i></button>
                         </div>
                         <p id="workspace-error" class="hidden mt-6 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 p-6 rounded-2xl text-center"></p>
                     </div>
@@ -460,7 +460,7 @@
                 }
 
                 const dl = document.getElementById('workspace-download');
-                dl.href = URL.createObjectURL(blob);
+                dl.href = window.URL.createObjectURL(blob);
                 dl.download = filename;
 
                 setTimeout(() => {
@@ -488,7 +488,6 @@
             activeFileMaps['img2pdf'].clear();
             activeFileMaps['merge'].clear();
             
-            // Re-hide sort UI containers
             const mergeUi = document.getElementById('merge-sort-ui');
             const imgUi = document.getElementById('img2pdf-sort-ui');
             if (mergeUi) mergeUi.classList.add('hidden');
@@ -499,7 +498,7 @@
             document.getElementById('workspace-view').classList.add('hidden');
             document.getElementById('dashboard-view').classList.remove('hidden');
             document.getElementById('backBtn').classList.add('hidden');
-            resetWorkspace(); // Cleans up file maps and UI states when closing
+            resetWorkspace(); 
         }
 
         document.addEventListener('keydown', e => { if (e.key === 'Escape') closeWorkspace(); });
