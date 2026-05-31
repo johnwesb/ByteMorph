@@ -3,166 +3,182 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ByteMorph | Secure Local PDF Workspace</title>
+    <title>ByteMorph | Self-Hosted PDF Workspace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     
-    <style>
-        /* Custom Animations */
-        .blob {
-            animation: blob 15s infinite alternate;
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                        mono: ['JetBrains Mono', 'monospace'],
+                    },
+                    colors: {
+                        zinc: {
+                            950: '#09090b',
+                            900: '#18181b',
+                            800: '#27272a',
+                        }
+                    }
+                }
+            }
         }
-        .animation-delay-2000 { animation-delay: 2s; }
-        .animation-delay-4000 { animation-delay: 4s; }
+    </script>
+
+    <style>
+        body {
+            background-color: #09090b;
+            color: #e4e4e7;
+        }
         
-        @keyframes blob {
-            0% { transform: translate(0px, 0px) scale(1); }
-            33% { transform: translate(30px, -50px) scale(1.1); }
-            66% { transform: translate(-20px, 20px) scale(0.9); }
-            100% { transform: translate(0px, 0px) scale(1); }
+        /* Minimalist grid background */
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
         }
 
-        /* Scroll Reveal Classes */
+        /* Glass/Bento Card styling */
+        .bento-card {
+            background: rgba(24, 24, 27, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
+        }
+        .bento-card:hover {
+            border-color: rgba(255, 255, 255, 0.15);
+            background: rgba(24, 24, 27, 0.8);
+        }
+
+        /* Reveal Animation */
         .reveal {
             opacity: 0;
-            transform: translateY(40px);
-            transition: all 0.8s cubic-bezier(0.5, 0, 0, 1);
+            transform: translateY(15px);
+            transition: all 0.7s cubic-bezier(0.4, 0, 0.2, 1);
         }
         .reveal.active {
             opacity: 1;
             transform: translateY(0);
         }
-        
-        /* Staggered delays for grid items */
-        .delay-100 { transition-delay: 100ms; }
-        .delay-200 { transition-delay: 200ms; }
-        .delay-300 { transition-delay: 300ms; }
     </style>
 </head>
-<body class="bg-[#020617] text-slate-300 font-sans antialiased selection:bg-emerald-500 selection:text-white overflow-x-hidden">
+<body class="antialiased min-h-screen relative selection:bg-zinc-800 selection:text-white">
 
-    <div class="fixed inset-0 z-[-1] pointer-events-none">
-        <div class="absolute inset-0 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
-        
-        <div class="absolute top-[-10%] left-[-10%] w-[30rem] h-[30rem] bg-emerald-600/20 rounded-full mix-blend-screen filter blur-[100px] opacity-50 blob"></div>
-        <div class="absolute top-[20%] right-[-10%] w-[30rem] h-[30rem] bg-cyan-600/20 rounded-full mix-blend-screen filter blur-[100px] opacity-50 blob animation-delay-2000"></div>
-        <div class="absolute bottom-[-20%] left-[20%] w-[40rem] h-[40rem] bg-blue-600/20 rounded-full mix-blend-screen filter blur-[100px] opacity-50 blob animation-delay-4000"></div>
-    </div>
+    <div class="fixed inset-0 z-[-1] bg-grid pointer-events-none"></div>
 
-    <nav class="border-b border-slate-800/50 bg-slate-950/50 backdrop-blur-xl sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
-            <div class="flex items-center gap-3 hover:scale-105 transition-transform duration-300 cursor-pointer">
-                <div class="bg-emerald-500 text-white w-10 h-10 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(16,185,129,0.4)]">
-                    <i class="fa-solid fa-microchip"></i>
-                </div>
-                <span class="text-2xl font-black text-white tracking-tight">ByteMorph</span>
+    <nav class="border-b border-white/5 bg-zinc-950/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3 font-mono font-bold text-lg tracking-tight">
+                <i class="fa-solid fa-microchip text-zinc-400"></i>
+                <span>ByteMorph</span>
             </div>
-            <a href="https://github.com/johnwesb/ByteMorph" target="_blank" class="text-slate-400 hover:text-white transition-colors flex items-center gap-2 font-medium bg-slate-800/50 hover:bg-slate-800 px-4 py-2 rounded-lg border border-slate-700/50">
-                <i class="fa-brands fa-github text-xl"></i> GitHub
-            </a>
+            <div class="flex items-center gap-6 font-mono text-sm text-zinc-400">
+                <a href="#features" class="hover:text-white transition-colors">Features</a>
+                <a href="https://github.com/johnwesb/ByteMorph" class="text-white bg-white/10 hover:bg-white/20 px-4 py-2 rounded-md transition-colors flex items-center gap-2">
+                    <i class="fa-brands fa-github"></i> Source
+                </a>
+            </div>
         </div>
     </nav>
 
-    <header class="max-w-6xl mx-auto px-6 py-32 text-center reveal relative">
-        <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 text-sm font-medium mb-8">
-            <span class="relative flex h-2 w-2">
-              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span class="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            v1.0.0 Beta is now live
+    <main class="max-w-5xl mx-auto px-6 pt-32 pb-20 text-center reveal">
+        <div class="inline-block mb-6 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs font-mono text-zinc-400">
+            > v1.0.0-beta is available
         </div>
         
-        <h1 class="text-5xl md:text-7xl font-black text-white tracking-tight mb-8 leading-tight">
-            Your Documents. <br>
-            <span class="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 via-cyan-400 to-blue-500 animate-pulse">Zero Cloud Uploads.</span>
+        <h1 class="text-5xl md:text-6xl font-semibold tracking-tight mb-6 text-white leading-tight">
+            The Self-Hosted <br>
+            <span class="text-zinc-500">PDF Workspace.</span>
         </h1>
-        <p class="text-xl md:text-2xl text-slate-400 max-w-3xl mx-auto mb-12 leading-relaxed">
-            ByteMorph is an open-source, offline-first PDF manipulation tool. It brings enterprise-grade document processing directly to your local machine, guaranteeing absolute data privacy.
+        
+        <p class="text-lg text-zinc-400 max-w-2xl mx-auto mb-10">
+            Enterprise-grade document processing running entirely on your local host. 
+            Zero cloud telemetry, no upload limits, and absolute data sovereignty.
         </p>
-        <div class="flex flex-col sm:flex-row items-center justify-center gap-5">
-            <a href="https://github.com/johnwesb/ByteMorph/releases/tag/v1.0.0-beta.1" class="w-full sm:w-auto bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold px-8 py-4 rounded-xl transition-all duration-300 shadow-[0_0_30px_rgba(16,185,129,0.3)] hover:shadow-[0_0_40px_rgba(16,185,129,0.5)] hover:-translate-y-1 flex items-center justify-center gap-3 group">
-                <i class="fa-brands fa-windows text-xl group-hover:rotate-12 transition-transform"></i> Download for Windows
-            </a>
-            <a href="https://github.com/johnwesb/ByteMorph" class="w-full sm:w-auto bg-slate-800/80 hover:bg-slate-700 text-white font-semibold px-8 py-4 rounded-xl transition-all duration-300 border border-slate-700 hover:border-slate-600 hover:-translate-y-1 flex items-center justify-center gap-3">
-                <i class="fa-solid fa-code"></i> View Source Code
-            </a>
-        </div>
-    </header>
 
-    <section class="border-t border-slate-800/50 bg-slate-900/20 py-24 relative z-10 backdrop-blur-sm">
-        <div class="max-w-6xl mx-auto px-6">
-            <div class="text-center mb-16 reveal">
-                <h2 class="text-3xl font-bold text-white mb-4">Everything you need, running locally.</h2>
-                <p class="text-slate-400">Powered by Python, Waitress, and PyMuPDF.</p>
+        <div class="max-w-2xl mx-auto bg-[#0a0a0a] border border-white/10 rounded-xl overflow-hidden text-left shadow-2xl">
+            <div class="bg-zinc-900 border-b border-white/5 px-4 py-3 flex items-center gap-2">
+                <div class="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50"></div>
+                <div class="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50"></div>
+                <div class="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50"></div>
+                <span class="ml-2 text-xs font-mono text-zinc-500">bytemorph-install.sh</span>
+            </div>
+            <div class="p-6 font-mono text-sm text-zinc-300 leading-relaxed overflow-x-auto">
+                <p><span class="text-emerald-500 font-bold">~</span> <span class="text-zinc-500">$</span> git clone https://github.com/johnwesb/ByteMorph.git</p>
+                <p><span class="text-emerald-500 font-bold">~</span> <span class="text-zinc-500">$</span> cd ByteMorph</p>
+                <p><span class="text-emerald-500 font-bold">~</span> <span class="text-zinc-500">$</span> pip install -r requirements.txt</p>
+                <p><span class="text-emerald-500 font-bold">~</span> <span class="text-zinc-500">$</span> python app.py</p>
+                <p class="text-zinc-500 mt-4">> Booting Waitress WSGI server...</p>
+                <p class="text-zinc-500">> ByteMorph is running on http://127.0.0.1:5000</p>
+            </div>
+        </div>
+    </main>
+
+    <section id="features" class="max-w-5xl mx-auto px-6 py-20">
+        <h2 class="text-2xl font-medium text-white mb-8 font-mono border-b border-white/10 pb-4">/architecture</h2>
+        
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            
+            <div class="md:col-span-2 bento-card rounded-2xl p-8 reveal">
+                <i class="fa-solid fa-layer-group text-zinc-400 mb-5 text-xl"></i>
+                <h3 class="text-lg font-medium text-white mb-2">Visual Page Engine</h3>
+                <p class="text-zinc-400 text-sm leading-relaxed max-w-md">
+                    Render, extract, and reorder document pages dynamically. Powered locally by Mozilla's PDF.js and Sortable.js integrated into a native-feeling application interface.
+                </p>
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <div class="bg-slate-900/80 backdrop-blur-md border border-slate-800 p-8 rounded-2xl hover:border-emerald-500/50 transition-colors duration-300 hover:-translate-y-2 reveal delay-100 group shadow-lg">
-                    <div class="bg-emerald-500/10 w-16 h-16 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                        <i class="fa-solid fa-layer-group text-emerald-400 text-3xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Merge & Split</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed">Visually organize, reorder, merge, or extract pages from multiple PDFs using a seamless drag-and-drop interface.</p>
-                </div>
-                
-                <div class="bg-slate-900/80 backdrop-blur-md border border-slate-800 p-8 rounded-2xl hover:border-blue-500/50 transition-colors duration-300 hover:-translate-y-2 reveal delay-200 group shadow-lg">
-                    <div class="bg-blue-500/10 w-16 h-16 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                        <i class="fa-solid fa-file-word text-blue-400 text-3xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Office Conversion</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed">Convert PDFs to editable Microsoft Word documents, and vice versa, retaining layouts and text structures seamlessly.</p>
-                </div>
-                
-                <div class="bg-slate-900/80 backdrop-blur-md border border-slate-800 p-8 rounded-2xl hover:border-cyan-500/50 transition-colors duration-300 hover:-translate-y-2 reveal delay-300 group shadow-lg">
-                    <div class="bg-cyan-500/10 w-16 h-16 rounded-xl flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-                        <i class="fa-solid fa-shield-halved text-cyan-400 text-3xl"></i>
-                    </div>
-                    <h3 class="text-xl font-bold text-white mb-3">Military Encryption</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed">Secure your sensitive documents with local AES-256 password protection, or unlock files directly on your machine.</p>
-                </div>
+            <div class="bento-card rounded-2xl p-8 reveal">
+                <i class="fa-solid fa-lock text-zinc-400 mb-5 text-xl"></i>
+                <h3 class="text-lg font-medium text-white mb-2">AES-256</h3>
+                <p class="text-zinc-400 text-sm leading-relaxed">
+                    Military-grade document encryption running purely in your machine's volatile memory.
+                </p>
             </div>
+
+            <div class="bento-card rounded-2xl p-8 reveal">
+                <i class="fa-solid fa-server text-zinc-400 mb-5 text-xl"></i>
+                <h3 class="text-lg font-medium text-white mb-2">Offline Core</h3>
+                <p class="text-zinc-400 text-sm leading-relaxed">
+                    Production-ready local deployment utilizing Python, Flask, and Waitress WSGI.
+                </p>
+            </div>
+
+            <div class="md:col-span-2 bento-card rounded-2xl p-8 reveal">
+                <i class="fa-solid fa-file-word text-zinc-400 mb-5 text-xl"></i>
+                <h3 class="text-lg font-medium text-white mb-2">Native Office Integration</h3>
+                <p class="text-zinc-400 text-sm leading-relaxed max-w-md">
+                    Securely taps into your native Windows Microsoft Word COM components to guarantee flawless layout and structural retention during cross-format conversions.
+                </p>
+            </div>
+
         </div>
     </section>
 
-    <footer class="border-t border-slate-800/50 py-12 text-center bg-slate-950">
-        <div class="flex justify-center items-center gap-2 text-slate-500 text-sm font-medium">
-            <i class="fa-solid fa-microchip text-emerald-500"></i> ByteMorph Open Source Project
+    <footer class="border-t border-white/5 py-10 mt-10">
+        <div class="max-w-5xl mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4 font-mono text-xs text-zinc-500">
+            <p>MIT License &copy; 2026 ByteMorph.</p>
+            <a href="https://github.com/johnwesb/ByteMorph/releases/tag/v1.0.0-beta.1" class="hover:text-zinc-300 transition-colors">
+                Download BETA Binary (.exe)
+            </a>
         </div>
     </footer>
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const reveals = document.querySelectorAll(".reveal");
-            
-            const revealOptions = {
-                threshold: 0.1,
-                rootMargin: "0px 0px -50px 0px"
-            };
-
-            const revealOnScroll = new IntersectionObserver(function(entries, observer) {
+            const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
-                    if (!entry.isIntersecting) {
-                        return;
-                    } else {
-                        entry.target.classList.add("active");
-                        observer.unobserve(entry.target);
+                    if (entry.isIntersecting) {
+                        entry.target.classList.add('active');
                     }
                 });
-            }, revealOptions);
+            }, { threshold: 0.1 });
 
-            reveals.forEach(reveal => {
-                revealOnScroll.observe(reveal);
-            });
-            
-            // Trigger immediately for elements already in view on load
-            setTimeout(() => {
-                reveals.forEach(reveal => {
-                    const rect = reveal.getBoundingClientRect();
-                    if(rect.top < window.innerHeight) {
-                        reveal.classList.add("active");
-                    }
-                });
-            }, 100);
+            document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
         });
     </script>
 </body>
