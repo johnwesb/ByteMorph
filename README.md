@@ -28,7 +28,7 @@ The application operates entirely on `localhost`, preventing any external networ
 To run ByteMorph from the source code, ensure you have Python 3.10 or higher installed.
 
 1. Clone the repository:
-git clone https://github.com/yourusername/ByteMorph.git
+git clone https://github.com/johnwesb/ByteMorph.git
 cd ByteMorph
 
 2. Create and activate a virtual environment (Recommended):
