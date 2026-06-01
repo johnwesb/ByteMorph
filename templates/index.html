@@ -3,56 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ByteMorph - Secure & Local</title>
+    <title>ByteMorph | Workspace</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
     <script>pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';</script>
 
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: { sans: ['Inter', 'sans-serif'], mono: ['JetBrains Mono', 'monospace'] },
+                    colors: { zinc: { 950: '#09090b', 900: '#18181b', 800: '#27272a' } }
+                }
+            }
+        }
+    </script>
+
     <style>
-        :root { --primary: 16 185 129; }
-        .dark { --primary: 52 211 153; }
-
-        .fade-enter { opacity: 0; transform: translateY(15px); }
-        .fade-enter-active { opacity: 1; transform: translateY(0); transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1); }
-
-        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
-        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 9999px; }
-        .custom-scrollbar::-webkit-scrollbar-thumb { background: #94a3b8; border-radius: 9999px; }
-        .dark .custom-scrollbar::-webkit-scrollbar-track { background: #1e2937; }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb { background: #64748b; }
-
-        .pdf-canvas-render {
-            box-shadow: 0 25px 50px -12px rgb(0 0 0 / 0.25);
-            border: 1px solid #e2e8f0;
-            border-radius: 14px;
-            transition: all 0.3s ease;
+        body { background-color: #09090b; color: #e4e4e7; }
+        .bg-grid {
+            background-size: 40px 40px;
+            background-image: linear-gradient(to right, rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                              linear-gradient(to bottom, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
+            -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
         }
-        .pdf-canvas-render:hover {
-            transform: scale(1.06);
-            box-shadow: 0 35px 70px -15px rgb(0 0 0 / 0.35);
+        .bento-card {
+            background: rgba(24, 24, 27, 0.4);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: all 0.2s ease;
         }
-
-        .progress-bar { transition: width 900ms cubic-bezier(0.34, 1.56, 0.64, 1); }
+        .bento-card:hover { border-color: rgba(255, 255, 255, 0.15); background: rgba(24, 24, 27, 0.8); }
+        .fade-enter-active { animation: fadeIn 0.4s cubic-bezier(0.4, 0, 0.2, 1); }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #09090b; }
+        ::-webkit-scrollbar-thumb { background: #27272a; border-radius: 4px; }
+        .progress-bar { transition: width 900ms cubic-bezier(0.4, 0, 0.2, 1); }
+        .pdf-canvas-render { border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; }
     </style>
 </head>
-<body class="bg-slate-50 dark:bg-slate-950 text-slate-900 dark:text-slate-100 font-sans min-h-screen flex flex-col transition-colors duration-300">
+<body class="antialiased min-h-screen relative selection:bg-zinc-800 selection:text-white flex flex-col">
 
-    <nav class="bg-white dark:bg-slate-900 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-50 shadow-sm">
-        <div class="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-            <div onclick="closeWorkspace()" class="flex items-center gap-3 cursor-pointer group">
-                <div class="bg-emerald-500 text-white w-9 h-9 rounded-2xl flex items-center justify-center shadow-lg group-hover:rotate-12 transition-transform">
-                    <i class="fa-solid fa-microchip"></i>
-                </div>
-                <span class="text-3xl font-black tracking-tighter">Byte<span class="text-emerald-500">Morph</span></span>
+    <div class="fixed inset-0 z-[-1] bg-grid pointer-events-none"></div>
+
+    <nav class="border-b border-white/5 bg-zinc-950/50 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
+            <div onclick="closeWorkspace()" class="flex items-center gap-3 font-mono font-bold text-lg tracking-tight cursor-pointer hover:text-white transition-colors">
+                <i class="fa-solid fa-cubes-stacked text-zinc-400"></i>
+                <span>ByteMorph</span>
             </div>
-
-            <div class="flex items-center gap-6">
-                <button onclick="toggleDarkMode()" id="theme-toggle" class="w-11 h-11 flex items-center justify-center rounded-2xl hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors">
-                    <i class="fa-solid fa-moon text-xl"></i>
-                </button>
-                <button id="backBtn" onclick="closeWorkspace()" class="hidden md:flex items-center gap-2 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-6 py-3 rounded-2xl font-medium transition-all">
+            <div>
+                <button id="backBtn" onclick="closeWorkspace()" class="hidden md:flex items-center gap-2 text-zinc-400 hover:text-white bg-white/5 hover:bg-white/10 px-4 py-2 rounded-md font-mono text-sm transition-colors border border-white/5">
                     <i class="fa-solid fa-arrow-left"></i><span>Back to Tools</span>
                 </button>
             </div>
@@ -61,108 +67,153 @@
 
     <main class="flex-1 pb-12">
         <div id="dashboard-view" class="fade-enter-active">
-            <div class="bg-gradient-to-br from-white via-slate-50 to-white dark:from-slate-900 dark:via-slate-950 py-28 text-center">
-                <h1 class="text-6xl md:text-7xl font-black tracking-tighter text-slate-900 dark:text-white mb-6">Your Offline PDF Workspace</h1>
-                <p class="text-2xl text-slate-600 dark:text-slate-400">Zero cloud • Zero tracking • Pure privacy</p>
+            <div class="py-24 text-center">
+                <div class="inline-block mb-6 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs font-mono text-zinc-400 shadow-sm">
+                    > Environment Initialization Complete
+                </div>
+                <h1 class="text-4xl md:text-5xl font-semibold tracking-tight text-white mb-4 font-mono">Local Workspace</h1>
+                <p class="text-zinc-500 text-sm font-sans max-w-xl mx-auto">All processing execution maps occur completely inside sandboxed client memory spaces.</p>
             </div>
-            <div class="max-w-7xl mx-auto px-6 py-16">
-                <h3 class="uppercase tracking-[3px] text-xs font-bold text-slate-400 dark:text-slate-500 mb-10 text-center">AVAILABLE TOOLS</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6" id="launcher-grid"></div>
+            <div class="max-w-6xl mx-auto px-6 pb-16">
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="launcher-grid"></div>
             </div>
         </div>
 
-        <div id="workspace-view" class="hidden">
-            <div class="bg-gradient-to-r from-slate-900 to-slate-800 text-white py-16 px-6 border-b-4 border-emerald-500" id="workspace-hero"></div>
-            <div class="max-w-7xl mx-auto px-6 py-10" id="workspace-container"></div>
+        <div id="workspace-view" class="hidden fade-enter-active">
+            <div class="max-w-4xl mx-auto px-6 py-12" id="workspace-container"></div>
         </div>
     </main>
 
-    <footer class="bg-white dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 py-10 text-center text-slate-400 dark:text-slate-500">
-        <p>© 2026 ByteMorph • Secure Local Environment</p>
+    <footer class="border-t border-white/5 py-8 text-center text-zinc-600 font-mono text-xs">
+        <p id="footer-text">ByteMorph Secure Instance Status <span id="lambda-btn" class="hidden cursor-pointer hover:text-orange-500 transition-colors px-1" onclick="triggerEasterEgg()">&lambda;</span></p>
     </footer>
 
     <script>
         const tools = [
-            { id: 'pdf2img', title: 'PDF to Image', desc: 'Convert pages to JPG/PNG', icon: 'fa-file-image text-emerald-500', api: '/api/pdf-to-image', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', dropSubText: 'or drag & drop your PDF here', optionsHtml: '' },
-            { id: 'merge', title: 'Merge PDFs', desc: 'Combine documents in order', icon: 'fa-layer-group text-purple-500', api: '/api/merge-pdfs', accept: '.pdf', multiple: true, dropText: 'Upload PDF files', dropSubText: 'or drag & drop multiple PDFs here', optionsHtml: '<div id="merge-sort-ui" class="hidden flex-grow flex flex-col w-full"><div id="merge-thumbnails" class="grid grid-cols-1 md:grid-cols-2 gap-4 overflow-y-auto custom-scrollbar flex-grow p-2" style="max-height: 60vh;"></div></div>' },
-            { id: 'img2pdf', title: 'Images to PDF', desc: 'Turn photos into a PDF', icon: 'fa-images text-blue-500', api: '/api/images-to-pdf', accept: 'image/png,image/jpeg,image/jpg', multiple: true, dropText: 'Upload Images', dropSubText: 'or drag & drop JPG/PNG files here', optionsHtml: '<div id="img2pdf-sort-ui" class="hidden flex-grow flex flex-col w-full"><div id="img2pdf-thumbnails" class="flex flex-wrap gap-6 overflow-y-auto custom-scrollbar flex-grow content-start justify-center p-4 bg-slate-50 dark:bg-slate-800 rounded-xl border border-slate-200 dark:border-slate-700" style="max-height: 60vh;"></div></div>' },
-            { id: 'split', title: 'Split PDF', desc: 'Extract specific pages', icon: 'fa-scissors text-red-500', api: '/api/split-pdf', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', dropSubText: 'or drag & drop your PDF here',
+            { id: 'pdf2img', title: 'PDF to Image', desc: 'Convert pages to PNG assets layer archives', icon: 'fa-file-image', api: '/api/pdf-to-image', accept: '.pdf', multiple: false, dropText: 'Load File Payload', dropSubText: 'Drop PDF document' },
+            { id: 'merge', title: 'Merge PDFs', desc: 'Consolidate file segments down recursively', icon: 'fa-layer-group', api: '/api/merge-pdfs', accept: '.pdf', multiple: true, dropText: 'Load Target Segments', dropSubText: 'Supports consecutive multi-directory additions', optionsHtml: '<div id="merge-sort-ui" class="hidden w-full mt-4"><div id="merge-thumbnails" class="flex flex-col gap-2 overflow-y-auto max-h-[40vh] p-1 bg-black/20 rounded-lg border border-white/5"></div></div>' },
+            { id: 'img2pdf', title: 'Images to PDF', desc: 'Compile graphical file arrays together', icon: 'fa-images', api: '/api/images-to-pdf', accept: 'image/png,image/jpeg,image/jpg', multiple: true, dropText: 'Load Images Grid', dropSubText: 'Supports consecutive file list injections', optionsHtml: '<div id="img2pdf-sort-ui" class="hidden w-full mt-4"><div id="img2pdf-thumbnails" class="grid grid-cols-2 md:grid-cols-3 gap-6 overflow-y-auto max-h-[50vh] p-4 bg-black/30 rounded-lg border border-white/5"></div></div>' },
+            { id: 'split', title: 'Split PDF', desc: 'Extract clean designated page range offsets', icon: 'fa-scissors', api: '/api/split-pdf', accept: '.pdf', multiple: false, dropText: 'Load Main Document', dropSubText: 'Drop document here',
               optionsHtml: `
-                <div class="grid grid-cols-2 gap-6">
+                <div class="p-4 bg-black/20 rounded-lg border border-white/5 mb-4 font-mono text-xs text-zinc-400" id="split-info-tag">> Parsing document parameters...</div>
+                <div class="grid grid-cols-2 gap-4 font-mono">
                     <div>
-                        <label class="block text-sm font-medium mb-2">Start Page</label>
-                        <input type="number" name="start" min="1" value="1" class="w-full p-4 border border-slate-300 dark:border-slate-600 rounded-2xl focus:border-emerald-500 outline-none text-lg bg-transparent">
+                        <label class="block text-xs text-zinc-400 mb-2">Initial Page Index</label>
+                        <input type="number" id="split-start" name="start" min="1" value="1" class="w-full p-3 bg-black/50 border border-white/10 rounded-md focus:border-white/30 outline-none text-white text-sm">
                     </div>
                     <div>
-                        <label class="block text-sm font-medium mb-2">End Page</label>
-                        <input type="number" name="end" min="1" value="1" class="w-full p-4 border border-slate-300 dark:border-slate-600 rounded-2xl focus:border-emerald-500 outline-none text-lg bg-transparent">
+                        <label class="block text-xs text-zinc-400 mb-2">Terminal Page Index</label>
+                        <input type="number" id="split-end" name="end" min="1" value="1" class="w-full p-3 bg-black/50 border border-white/10 rounded-md focus:border-white/30 outline-none text-white text-sm">
                     </div>
                 </div>` 
             },
-            { id: 'rotate', title: 'Rotate PDF', desc: 'Fix page orientation', icon: 'fa-rotate-right text-indigo-500', api: '/api/rotate-pdf', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', dropSubText: 'or drag & drop your PDF here',
+            { id: 'rotate', title: 'Rotate PDF', desc: 'Modify system viewport rotation orientation parameters', icon: 'fa-rotate-right', api: '/api/rotate-pdf', accept: '.pdf', multiple: false, dropText: 'Load Source Asset', dropSubText: 'Drop file here',
               optionsHtml: `
-                <div>
-                    <label class="block text-sm font-medium mb-2">Rotation Angle</label>
-                    <select name="angle" class="w-full p-4 border border-slate-300 dark:border-slate-600 rounded-2xl focus:border-emerald-500 outline-none text-lg bg-transparent dark:bg-slate-800">
-                        <option value="90">90° Clockwise</option>
-                        <option value="180">180°</option>
-                        <option value="270">90° Counter-clockwise</option>
-                    </select>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-2">Target Selection Constraints</label>
+                            <select name="mode" id="rotate-mode" onchange="toggleRotateRange(this.value)" class="w-full p-3 bg-black/50 border border-white/10 rounded-md outline-none text-white text-xs">
+                                <option value="all">Apply Globally (All Pages)</option>
+                                <option value="odd">Odd Page Sequences Only</option>
+                                <option value="even">Even Page Sequences Only</option>
+                                <option value="range">Explicit Page Sequences Array</option>
+                            </select>
+                        </div>
+                        <div id="rotate-range-box" class="hidden">
+                            <label class="block text-xs text-zinc-400 mb-2">Target Indexes (Example: 1,3,5-7)</label>
+                            <input type="text" name="range" class="w-full p-3 bg-black/50 border border-white/10 rounded-md outline-none text-white text-xs" placeholder="Define page arrays...">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-zinc-400 mb-2">Direction Magnitude Matrix</label>
+                            <select name="angle" class="w-full p-3 bg-black/50 border border-white/10 rounded-md outline-none text-white text-xs">
+                                <option value="90">90° Clockwise</option>
+                                <option value="180">180° Absolute</option>
+                                <option value="270">90° Counter-Clockwise</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div id="rotate-preview-pane" class="flex flex-col items-center justify-center p-4 bg-black/30 rounded-lg border border-white/5 text-zinc-500 text-xs text-center min-h-[150px]">
+                        Awaiting configuration maps initialization...
+                    </div>
                 </div>`
             },
-            { id: 'extract', title: 'Extract Text', desc: 'Pull raw text out of PDFs', icon: 'fa-file-lines text-orange-500', api: '/api/extract-text', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', dropSubText: 'or drag & drop your PDF here', optionsHtml: '' },
-            { id: 'protect', title: 'Protect PDF', desc: 'Add AES encryption', icon: 'fa-lock text-slate-600', api: '/api/protect-pdf', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', dropSubText: 'or drag & drop your PDF here',
+            { id: 'extract', title: 'Extract Text', desc: 'Pull plain text characters safely', icon: 'fa-file-lines', api: '/api/extract-text', accept: '.pdf', multiple: false, dropText: 'Load Structural Data', dropSubText: 'Drop target PDF' },
+            { id: 'protect', title: 'Protect PDF', desc: 'Deploy cryptographic password layers', icon: 'fa-lock', api: '/api/protect-pdf', accept: '.pdf', multiple: false, dropText: 'Load Source Payload', dropSubText: 'Drop file here',
               optionsHtml: `
-                <div>
-                    <label class="block text-sm font-medium mb-2">Set Password</label>
-                    <input type="password" name="password" placeholder="Enter strong password" required
-                           class="w-full p-4 border border-slate-300 dark:border-slate-600 rounded-2xl focus:border-emerald-500 outline-none text-lg bg-transparent">
+                <div class="font-mono">
+                    <label class="block text-xs text-zinc-400 mb-2">Define Configuration Key</label>
+                    <input type="password" name="password" placeholder="Key token value..." required class="w-full p-3 bg-black/50 border border-white/10 rounded-md outline-none text-white text-xs">
                 </div>`
             },
-            { id: 'unlock', title: 'Unlock PDF', desc: 'Remove password', icon: 'fa-unlock text-emerald-600', api: '/api/unlock-pdf', accept: '.pdf', multiple: false, dropText: 'Upload Protected PDF', dropSubText: 'or drag & drop your locked PDF here',
+            { id: 'unlock', title: 'Unlock PDF', desc: 'Strip out active validation parameters', icon: 'fa-unlock', api: '/api/unlock-pdf', accept: '.pdf', multiple: false, dropText: 'Load Locked Payload', dropSubText: 'Drop password-protected document',
               optionsHtml: `
-                <div>
-                    <label class="block text-sm font-medium mb-2">Current Password</label>
-                    <input type="password" name="password" placeholder="••••••••" required
-                           class="w-full p-4 border border-slate-300 dark:border-slate-600 rounded-2xl focus:border-emerald-500 outline-none text-lg bg-transparent">
+                <div class="font-mono">
+                    <label class="block text-xs text-zinc-400 mb-2">Security Key Decryption Values</label>
+                    <input type="password" name="password" placeholder="Key token value..." required class="w-full p-3 bg-black/50 border border-white/10 rounded-md outline-none text-white text-xs">
                 </div>`
             },
-            { id: 'watermark', title: 'Add Watermark', desc: 'Stamp text on pages', icon: 'fa-stamp text-sky-500', api: '/api/add-watermark', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', dropSubText: 'or drag & drop your PDF here',
+            { id: 'watermark', title: 'Watermark', desc: 'Stamp visible identification tags safely', icon: 'fa-stamp', api: '/api/add-watermark', accept: '.pdf', multiple: false, dropText: 'Load Core File', dropSubText: 'Drop target PDF',
               optionsHtml: `
-                <div>
-                    <label class="block text-sm font-medium mb-2">Watermark Text</label>
-                    <input type="text" name="watermark_text" value="CONFIDENTIAL" 
-                           class="w-full p-4 border border-slate-300 dark:border-slate-600 rounded-2xl focus:border-emerald-500 outline-none text-lg bg-transparent">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono text-xs">
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-zinc-400 mb-2">Display Identification Text</label>
+                            <input type="text" name="watermark_text" id="wm-text" value="CONFIDENTIAL" oninput="updateWatermarkPreview()" class="w-full p-3 bg-black/50 border border-white/10 rounded-md text-white outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-zinc-400 mb-2">Scale Weight (Font Size)</label>
+                            <input type="range" name="size" id="wm-size" min="20" max="100" value="45" oninput="updateWatermarkPreview()" class="w-full accent-white">
+                        </div>
+                        <div>
+                            <label class="block text-zinc-400 mb-2">Opacity Vector Density</label>
+                            <input type="range" name="opacity" id="wm-opacity" min="0.1" max="0.9" step="0.05" value="0.25" oninput="updateWatermarkPreview()" class="w-full accent-white">
+                        </div>
+                    </div>
+                    <div class="flex flex-col items-center justify-center p-4 bg-black/30 rounded-lg border border-white/5 relative overflow-hidden min-h-[160px]">
+                        <div id="wm-preview-bg" class="absolute inset-0 flex items-center justify-center text-zinc-800/10 uppercase select-none text-[8px] font-bold pointer-events-none p-2 leading-none select-none">Preview Document Matrix Background Mock</div>
+                        <div id="wm-preview-text" class="text-red-500 font-bold select-none tracking-widest pointer-events-none transform rotate-[45deg] whitespace-nowrap transition-all z-10">CONFIDENTIAL</div>
+                    </div>
                 </div>`
             },
-            { id: 'pdf2word', title: 'PDF to Word', desc: 'Convert PDF to DOCX', icon: 'fa-file-word text-blue-600', api: '/api/pdf-to-word', accept: '.pdf', multiple: false, dropText: 'Upload PDF file', dropSubText: 'or drag & drop your PDF here', optionsHtml: '<div class="bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300 p-4 rounded-xl flex items-center"><i class="fa-solid fa-circle-info text-2xl mr-4"></i><div><p class="font-bold">Layout Conversion</p><p class="text-sm">We will attempt to reconstruct the text, tables, and images into an editable Word document.</p></div></div>' },
-            { id: 'word2pdf', title: 'Word to PDF', desc: 'Convert DOCX to PDF', icon: 'fa-file-pdf text-red-600', api: '/api/word-to-pdf', accept: '.docx', multiple: false, dropText: 'Upload Word Document', dropSubText: 'or drag & drop your DOCX file here', optionsHtml: '<div class="bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-300 p-4 rounded-xl flex items-center"><i class="fa-solid fa-circle-info text-2xl mr-4"></i><div><p class="font-bold">Requires MS Office</p><p class="text-sm">This tool uses Microsoft Word in the background of your PC to safely convert the document.</p></div></div>' }
+            { id: 'pdf2word', title: 'PDF to Word', desc: 'Process conversion profiles into DOCX files', icon: 'fa-file-word', api: '/api/pdf-to-word', accept: '.pdf', multiple: false, dropText: 'Load PDF File', dropSubText: 'Drop target file' },
+            { id: 'doc2pdf', title: 'Doc to PDF', desc: 'Convert structured layout parameters into standard documents', icon: 'fa-file-pdf', api: '/api/doc-to-pdf', accept: '.docx,.txt', multiple: false, dropText: 'Load Document Payload', dropSubText: 'Drop target DOCX or TXT files here' }
         ];
 
+        let activeFileCounter = 0;
         const activeFileMaps = { 'img2pdf': new Map(), 'merge': new Map() };
         let currentToolId = null;
-        let isDarkMode = localStorage.getItem('darkMode') === 'true';
 
-        function toggleDarkMode() {
-            isDarkMode = !isDarkMode;
-            document.documentElement.classList.toggle('dark', isDarkMode);
-            localStorage.setItem('darkMode', isDarkMode);
-            document.getElementById('theme-toggle').innerHTML = isDarkMode ? 
-                '<i class="fa-solid fa-sun text-xl"></i>' : '<i class="fa-solid fa-moon text-xl"></i>';
-        }
-
-        if (isDarkMode) document.documentElement.classList.add('dark');
-
-        // Launcher
         tools.forEach(tool => {
             document.getElementById('launcher-grid').innerHTML += `
-                <div onclick="openWorkspace('${tool.id}')" class="group bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-3xl p-8 hover:border-emerald-500 transition-all hover:shadow-2xl hover:-translate-y-1 cursor-pointer">
-                    <div class="text-6xl mb-6 text-center transition-transform group-hover:scale-110"><i class="fa-solid ${tool.icon}"></i></div>
-                    <h3 class="text-2xl font-bold mb-2">${tool.title}</h3>
-                    <p class="text-slate-500 dark:text-slate-400">${tool.desc}</p>
+                <div onclick="openWorkspace('${tool.id}')" class="bento-card rounded-xl p-6 cursor-pointer group flex flex-col justify-between h-40">
+                    <div class="flex items-start justify-between">
+                        <i class="fa-solid ${tool.icon} text-zinc-400 text-xl group-hover:text-white transition-colors"></i>
+                        <i class="fa-solid fa-arrow-right text-xs text-zinc-600 opacity-0 group-hover:opacity-100 transform -translate-x-2 group-hover:translate-x-0 transition-all"></i>
+                    </div>
+                    <div>
+                        <h3 class="text-sm font-semibold text-white mb-1 font-mono">${tool.title}</h3>
+                        <p class="text-zinc-500 text-xs font-sans">${tool.desc}</p>
+                    </div>
                 </div>
             `;
         });
+
+        function toggleRotateRange(val) {
+            document.getElementById('rotate-range-box').style.display = (val === 'range') ? 'block' : 'none';
+        }
+
+        function updateWatermarkPreview() {
+            const txt = document.getElementById('wm-text').value;
+            const size = document.getElementById('wm-size').value;
+            const opacity = document.getElementById('wm-opacity').value;
+            const el = document.getElementById('wm-preview-text');
+            if (el) {
+                el.innerText = txt;
+                el.style.fontSize = (size / 3) + 'px';
+                el.style.opacity = opacity;
+            }
+        }
 
         function openWorkspace(id) {
             currentToolId = id;
@@ -172,82 +223,73 @@
             document.getElementById('workspace-view').classList.remove('hidden');
             document.getElementById('backBtn').classList.remove('hidden');
 
-            document.getElementById('workspace-hero').innerHTML = `
-                <div class="max-w-4xl mx-auto text-center">
-                    <i class="fa-solid ${tool.icon.replace(/text-.*/, '')} text-7xl mb-6 text-white opacity-90"></i>
-                    <h2 class="text-5xl font-black mb-4">${tool.title}</h2>
-                    <p class="text-emerald-300 text-2xl">${tool.desc}</p>
-                </div>
-            `;
-
             document.getElementById('workspace-container').innerHTML = `
-                <form id="workspace-form" class="max-w-6xl mx-auto" onsubmit="handleProcess(event, '${tool.id}', '${tool.api}')">
-                    <div id="workspace-dropzone" class="mb-12">
-                        <div id="dropzone-box" class="border-4 border-dashed border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 rounded-3xl p-24 text-center transition-all hover:border-emerald-500 cursor-pointer group"
-                             ondragover="handleDragOver(event)" ondragleave="handleDragLeave(event)" ondrop="handleDrop(event, '${tool.id}')">
+                <div class="mb-8 font-mono border-b border-white/5 pb-4">
+                    <h2 class="text-2xl font-semibold text-white mb-1"><i class="fa-solid ${tool.icon} text-zinc-500 mr-2"></i> /${tool.id}</h2>
+                    <p class="text-zinc-500 text-sm font-sans">${tool.desc}</p>
+                </div>
+
+                <form id="workspace-form" onsubmit="handleProcess(event, '${tool.id}', '${tool.api}')">
+                    <div id="workspace-dropzone" class="mb-8">
+                        <div id="dropzone-box" class="border border-dashed border-white/10 bg-zinc-900/30 rounded-xl p-16 text-center transition-all hover:border-white/30 hover:bg-zinc-900/50 cursor-pointer group relative">
                             <input type="file" id="main-file-input" name="${tool.multiple ? 'files' : 'file'}" accept="${tool.accept}" ${tool.multiple ? 'multiple' : ''} onchange="handleFileSelection(this, '${tool.id}')" class="absolute inset-0 w-full h-full opacity-0 cursor-pointer z-20">
-                            <div>
-                                <span class="inline-flex items-center gap-5 bg-emerald-600 text-white px-16 py-8 rounded-3xl text-2xl font-bold shadow-2xl group-hover:bg-emerald-700 transition-all pointer-events-none">
-                                    <i class="fa-solid fa-upload"></i> ${tool.dropText}
+                            <div class="font-mono">
+                                <span class="inline-flex items-center gap-3 bg-white/5 text-white px-6 py-3 rounded-md text-sm border border-white/10 group-hover:bg-white/10 transition-all pointer-events-none">
+                                    <i class="fa-solid fa-upload text-zinc-400"></i> ${tool.dropText}
                                 </span>
-                                <p class="mt-10 text-slate-500 dark:text-slate-400 text-xl pointer-events-none">${tool.dropSubText}</p>
+                                <p class="mt-4 text-zinc-600 text-xs font-sans pointer-events-none">${tool.dropSubText}</p>
                             </div>
-                            <p id="dropzone-error" class="text-red-500 mt-8 hidden text-lg"></p>
+                            <p id="dropzone-error" class="text-red-400 mt-4 hidden text-xs font-mono"></p>
                         </div>
                     </div>
 
-                    <div id="workspace-options" class="hidden bg-white dark:bg-slate-900 rounded-3xl shadow-2xl border border-slate-100 dark:border-slate-700 p-10">
-                        <h3 class="text-3xl font-bold mb-8 flex items-center gap-4"><i class="fa-solid fa-sliders text-emerald-500"></i> Preview & Configure</h3>
-                        
-                        <div id="generic-file-preview" class="hidden mb-12"></div>
+                    <div id="workspace-options" class="hidden bento-card rounded-xl p-8">
+                        <div id="generic-file-preview" class="hidden mb-8"></div>
                         ${tool.optionsHtml || ''}
                         
-                        <div class="mt-12 flex gap-4">
-                            <button type="button" onclick="resetWorkspace()" class="flex-1 py-7 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-3xl font-bold text-lg transition-colors z-30 relative">Change File</button>
-                            <button type="submit" class="flex-1 py-7 bg-emerald-600 hover:bg-emerald-700 text-white rounded-3xl font-bold text-2xl shadow-xl transition-transform hover:-translate-y-1 z-30 relative">Process Securely <i class="fa-solid fa-arrow-right ml-3"></i></button>
+                        <div class="mt-8 flex gap-3 font-sans text-sm">
+                            <button type="button" onclick="resetWorkspace()" class="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-md transition-colors z-30 relative">Clear Workspace</button>
+                            ${tool.multiple ? `<button type="button" onclick="triggerIncrementalUpload()" class="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 border border-white/5 text-zinc-200 rounded-md transition-colors z-30 relative flex items-center justify-center gap-2">Add More Files <i class="fa-solid fa-plus text-xs"></i></button>` : ''}
+                            <button type="submit" class="flex-[2] py-3 bg-white text-black font-semibold hover:bg-zinc-200 rounded-md transition-all z-30 relative flex items-center justify-center gap-2">Execute Task <i class="fa-solid fa-play text-xs"></i></button>
                         </div>
-                        <p id="workspace-error" class="hidden mt-6 text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-950 p-6 rounded-2xl text-center"></p>
+                        <p id="workspace-error" class="hidden mt-4 text-red-400 bg-red-500/10 border border-red-500/20 p-4 rounded-md text-xs font-mono"></p>
                     </div>
                 </form>
 
-                <div id="workspace-loading" class="hidden bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-16 text-center max-w-2xl mx-auto">
-                    <i class="fa-solid fa-circle-notch fa-spin text-8xl text-emerald-500 mb-8"></i>
-                    <h4 class="text-4xl font-bold mb-3">Processing securely...</h4>
-                    <p class="text-slate-500 dark:text-slate-400 mb-10">Everything stays on your device</p>
-                    <div class="max-w-md mx-auto h-3 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                        <div id="progress-bar" class="progress-bar h-full bg-gradient-to-r from-emerald-400 to-teal-500 w-0"></div>
+                <div id="workspace-loading" class="hidden bento-card rounded-xl p-12 text-center font-sans">
+                    <i class="fa-solid fa-circle-notch fa-spin text-4xl text-zinc-400 mb-6"></i>
+                    <h4 class="text-lg text-white mb-2 font-mono">Running Local Calculation Matrix...</h4>
+                    <p class="text-zinc-500 text-xs mb-8">Writing memory streams to disk architecture</p>
+                    <div class="max-w-xs mx-auto h-1 bg-zinc-800 rounded-full overflow-hidden">
+                        <div id="progress-bar" class="progress-bar h-full bg-white w-0"></div>
                     </div>
                 </div>
 
-                <div id="workspace-success" class="hidden bg-white dark:bg-slate-900 rounded-3xl shadow-2xl p-16 text-center max-w-2xl mx-auto">
-                    <div class="w-32 h-32 mx-auto mb-8 bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 rounded-full flex items-center justify-center text-7xl">✓</div>
-                    <h3 class="text-5xl font-bold mb-4">Task Completed!</h3>
-                    <p class="text-2xl text-slate-500 dark:text-slate-400 mb-12">Your file is ready</p>
-                    <a id="workspace-download" href="#" class="inline-flex items-center gap-4 bg-emerald-600 hover:bg-emerald-700 text-white text-2xl font-bold py-7 px-20 rounded-3xl shadow-2xl transition-transform hover:-translate-y-1">Download Result <i class="fa-solid fa-download"></i></a>
-                    <button onclick="resetWorkspace()" class="mt-12 text-emerald-600 hover:text-emerald-700 font-medium flex items-center gap-3 mx-auto text-lg"><i class="fa-solid fa-rotate"></i> Process Another File</button>
+                <div id="workspace-success" class="hidden bento-card rounded-xl p-12 text-center font-sans">
+                    <div class="w-16 h-16 mx-auto mb-6 bg-white/10 border border-white/20 text-white rounded-full flex items-center justify-center text-2xl"><i class="fa-solid fa-check"></i></div>
+                    <h3 class="text-xl text-white mb-2 font-mono">Execution Matrix Finalized</h3>
+                    <p class="text-zinc-500 text-xs mb-8">Isolated payload verified locally.</p>
+                    <a id="workspace-download" href="#" class="inline-flex items-center gap-3 bg-white text-black font-semibold py-3 px-8 rounded-md hover:bg-zinc-200 transition-colors text-sm mb-6">Save Payload <i class="fa-solid fa-download"></i></a>
+                    <br>
+                    <button onclick="resetWorkspace()" class="text-zinc-500 hover:text-white text-xs transition-colors underline decoration-zinc-700 underline-offset-4">Run secondary function</button>
                 </div>
             `;
+            if(id === 'merge') new Sortable(document.getElementById('merge-thumbnails'), { animation: 200 });
+            if(id === 'img2pdf') new Sortable(document.getElementById('img2pdf-thumbnails'), { animation: 200 });
         }
 
-        // Drag & Drop
-        function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('!border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-950/20'); }
-        function handleDragLeave(e) { e.preventDefault(); e.currentTarget.classList.remove('!border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-950/20'); }
+        function triggerIncrementalUpload() {
+            const inp = document.getElementById('main-file-input');
+            if(inp) inp.click();
+        }
+
+        function handleDragOver(e) { e.preventDefault(); e.currentTarget.classList.add('!border-white/50', 'bg-zinc-800/50'); }
+        function handleDragLeave(e) { e.preventDefault(); e.currentTarget.classList.remove('!border-white/50', 'bg-zinc-800/50'); }
         function handleDrop(e, toolId) {
             e.preventDefault();
-            e.currentTarget.classList.remove('!border-emerald-500', 'bg-emerald-50', 'dark:bg-emerald-950/20');
+            e.currentTarget.classList.remove('!border-white/50', 'bg-zinc-800/50');
             document.getElementById('main-file-input').files = e.dataTransfer.files;
             handleFileSelection(document.getElementById('main-file-input'), toolId);
-        }
-
-        function validateFiles(files, toolId) {
-            const tool = tools.find(t => t.id === toolId);
-            if (!tool?.accept) return true;
-            const accepted = tool.accept.split(',').map(t => t.trim().toLowerCase());
-            return Array.from(files).every(file => {
-                const name = file.name.toLowerCase();
-                const type = file.type.toLowerCase();
-                return accepted.some(acc => name.endsWith(acc) || type.startsWith(acc.split('/')[0]) || type === acc);
-            });
         }
 
         function handleFileSelection(inputElement, toolId) {
@@ -255,45 +297,14 @@
             if (!files.length) return;
 
             const errorEl = document.getElementById('dropzone-error');
-            errorEl.classList.add('hidden');
-
-            if (!validateFiles(files, toolId)) {
-                errorEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-1"></i> Invalid file type uploaded. Please upload ${tools.find(t=>t.id===toolId).accept}`;
-                errorEl.classList.remove('hidden');
-                inputElement.value = '';
-                return;
-            }
+            if(errorEl) errorEl.classList.add('hidden');
 
             document.getElementById('workspace-dropzone').classList.add('hidden');
-            document.getElementById('workspace-loading').classList.remove('hidden');
+            document.getElementById('workspace-options').classList.remove('hidden');
 
-            setTimeout(() => {
-                if (toolId === 'img2pdf') generateImageUI(inputElement);
-                else if (toolId === 'merge') generateMergeUI(inputElement);
-                else generateSingleFileUI(inputElement, toolId);
-
-                document.getElementById('workspace-loading').classList.add('hidden');
-                document.getElementById('workspace-options').classList.remove('hidden');
-            }, 600);
-        }
-
-        async function renderPdfPageToCanvas(file, pageNum = 1, targetWidth = 200) {
-            const fileUrl = URL.createObjectURL(file);
-            const pdf = await pdfjsLib.getDocument(fileUrl).promise;
-            const page = await pdf.getPage(pageNum);
-            
-            const viewport = page.getViewport({ scale: 1.0 });
-            const scale = targetWidth / viewport.width;
-            const scaledViewport = page.getViewport({ scale: scale });
-            
-            const canvas = document.createElement('canvas');
-            canvas.className = "pdf-canvas-render bg-white";
-            canvas.height = scaledViewport.height;
-            canvas.width = scaledViewport.width;
-            
-            await page.render({ canvasContext: canvas.getContext('2d'), viewport: scaledViewport }).promise;
-            URL.revokeObjectURL(fileUrl);
-            return { canvas: canvas, totalPages: pdf.numPages };
+            if (toolId === 'img2pdf') appendImagesToUI(files);
+            else if (toolId === 'merge') appendPDFsToMergeUI(files);
+            else generateSingleFileUI(inputElement, toolId);
         }
 
         async function generateSingleFileUI(inputElement, toolId) {
@@ -301,118 +312,100 @@
             const file = inputElement.files[0];
             preview.classList.remove('hidden');
 
-            const isWord = toolId.includes('word');
-            const iconClass = isWord ? 'fa-file-word text-blue-500' : 'fa-file-pdf text-red-500';
+            const isWord = toolId.includes('word') || toolId.includes('doc2pdf');
+            const iconClass = isWord ? 'fa-file-word text-blue-400' : 'fa-file-pdf text-red-400';
 
             preview.innerHTML = `
-                <div class="flex items-center gap-6 p-6 bg-slate-50 dark:bg-slate-800 rounded-3xl mb-8 border border-slate-200 dark:border-slate-700">
-                    <div class="text-6xl"><i class="fa-solid ${iconClass}"></i></div>
-                    <div class="flex-1 min-w-0">
-                        <h4 class="font-semibold text-2xl truncate">${file.name}</h4>
-                        <p class="text-slate-500 dark:text-slate-400 mt-1">${(file.size/1024/1024).toFixed(2)} MB</p>
+                <div class="flex items-center gap-4 p-4 bg-black/40 border border-white/5 rounded-lg">
+                    <div class="text-2xl"><i class="fa-solid ${iconClass}"></i></div>
+                    <div class="flex-1 min-w-0 font-mono">
+                        <h4 class="text-sm text-white truncate">${file.name}</h4>
+                        <p class="text-zinc-500 text-xs mt-1">${(file.size/1024/1024).toFixed(2)} MB</p>
                     </div>
-                    <div class="text-emerald-500 text-4xl"><i class="fa-solid fa-circle-check"></i></div>
                 </div>
             `;
 
-            if (isWord) return;
+            if (toolId === 'split') {
+                try {
+                    const url = URL.createObjectURL(file);
+                    const pdf = await pdfjsLib.getDocument(url).promise;
+                    document.getElementById('split-info-tag').innerText = `> Document Track Analysis: Verified. Length: ${pdf.numPages} Pages total.`;
+                    document.getElementById('split-start').max = pdf.numPages;
+                    document.getElementById('split-end').max = pdf.numPages;
+                    document.getElementById('split-end').value = pdf.numPages;
+                    URL.revokeObjectURL(url);
+                } catch(e) { document.getElementById('split-info-tag').innerText = `> Error parsing total parameters.`; }
+            }
 
-            const grid = document.createElement('div');
-            grid.className = "flex gap-10 overflow-x-auto custom-scrollbar pb-8 pt-4 snap-x snap-mandatory";
-            grid.innerHTML = '<div class="text-center w-full text-slate-400 py-6"><i class="fa-solid fa-circle-notch fa-spin text-3xl text-emerald-500 mb-2"></i><br>Rendering pages...</div>';
-            preview.appendChild(grid);
-
-            try {
-                const pdf = await pdfjsLib.getDocument(URL.createObjectURL(file)).promise;
-                grid.innerHTML = '';
-                const max = Math.min(pdf.numPages, 10);
-                for (let i = 1; i <= max; i++) {
-                    const page = await pdf.getPage(i);
-                    const scale = 200 / page.getViewport({scale:1}).width;
-                    const viewport = page.getViewport({scale});
+            if (toolId === 'rotate') {
+                try {
+                    const url = URL.createObjectURL(file);
+                    const pdf = await pdfjsLib.getDocument(url).promise;
+                    const page = await pdf.getPage(1);
+                    const viewport = page.getViewport({ scale: 0.3 });
                     const canvas = document.createElement('canvas');
-                    canvas.className = "pdf-canvas-render flex-shrink-0 snap-center bg-white";
+                    canvas.className = "pdf-canvas-render bg-white";
                     canvas.width = viewport.width; canvas.height = viewport.height;
-                    await page.render({canvasContext: canvas.getContext('2d'), viewport}).promise;
-
-                    const wrap = document.createElement('div');
-                    wrap.className = "flex-shrink-0 flex flex-col items-center gap-3 group";
-                    wrap.innerHTML = `${canvas.outerHTML}<span class="text-sm font-bold text-slate-500 dark:text-slate-400">Page ${i}</span>`;
-                    grid.appendChild(wrap);
-                }
-            } catch(e) {
-                grid.innerHTML = `<p class="text-amber-600"><i class="fa-solid fa-triangle-exclamation mr-1"></i> Preview unavailable for this specific PDF type.</p>`;
+                    await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
+                    const pane = document.getElementById('rotate-preview-pane');
+                    pane.innerHTML = `<p class="mb-2 text-zinc-400">Target Scale (Page 1 Sample View)</p>`;
+                    pane.appendChild(canvas);
+                    URL.revokeObjectURL(url);
+                } catch(e) { document.getElementById('rotate-preview-pane').innerText = "Preview Generation Error Matrix."; }
             }
         }
 
-        function generateImageUI(inputElement) { 
+        // Cumulative implementation fixing Multi-Directory breaks and Ant thumbnails 
+        function appendImagesToUI(files) {
             const thumbContainer = document.getElementById('img2pdf-thumbnails');
-            thumbContainer.innerHTML = '';
-            activeFileMaps['img2pdf'].clear();
             document.getElementById('img2pdf-sort-ui').classList.remove('hidden');
 
-            Array.from(inputElement.files).forEach((file, index) => {
-                const fileId = `img_${Date.now()}_${index}`;
+            Array.from(files).forEach(file => {
+                activeFileCounter++;
+                const fileId = `img_${Date.now()}_${activeFileCounter}`;
                 activeFileMaps['img2pdf'].set(fileId, file);
 
                 const div = document.createElement('div');
-                div.className = "w-64 aspect-[3/4] rounded-2xl overflow-hidden cursor-grab active:cursor-grabbing border-2 border-slate-200 dark:border-slate-600 hover:border-emerald-500 relative group bg-white dark:bg-slate-900 shadow-sm hover:shadow-xl transition-all flex flex-col p-3";
+                div.className = "bento-card rounded-lg overflow-hidden cursor-grab active:cursor-grabbing border border-white/10 hover:border-white/40 bg-black/60 relative group flex flex-col p-2 h-56 transition-all duration-150";
                 div.dataset.id = fileId;
 
                 const imgUrl = URL.createObjectURL(file);
                 div.innerHTML = `
-                    <div class="flex-grow flex items-center justify-center overflow-hidden mb-10 bg-slate-100 dark:bg-slate-800 rounded-xl p-2">
-                        <img src="${imgUrl}" class="max-w-full max-h-full object-contain pointer-events-none" onload="URL.revokeObjectURL(this.src)">
+                    <div class="flex-1 flex items-center justify-center overflow-hidden bg-zinc-950 rounded border border-white/5 p-1">
+                        <img src="${imgUrl}" class="max-w-full max-h-full object-contain opacity-90 group-hover:opacity-100" onload="URL.revokeObjectURL(this.src)">
                     </div>
-                    <div class="absolute bottom-0 left-0 right-0 bg-slate-800 dark:bg-slate-950 text-white text-sm font-medium truncate px-4 py-3 text-center pointer-events-none">
+                    <div class="mt-2 text-center text-[10px] font-mono text-zinc-500 truncate px-1 group-hover:text-zinc-300 transition-colors" title="${file.name}">
                         ${file.name}
                     </div>
                 `;
                 thumbContainer.appendChild(div);
             });
-            new Sortable(thumbContainer, { animation: 200, ghostClass: 'sortable-ghost-img' });
         }
 
-        function generateMergeUI(inputElement) { 
+        // Cumulative implementation for multi-directory assembly parameters tracking
+        function appendPDFsToMergeUI(files) {
             const thumbContainer = document.getElementById('merge-thumbnails');
-            thumbContainer.innerHTML = '';
-            activeFileMaps['merge'].clear();
             document.getElementById('merge-sort-ui').classList.remove('hidden');
 
-            Array.from(inputElement.files).forEach(async (file, index) => {
-                const fileId = `pdf_${Date.now()}_${index}`;
+            Array.from(files).forEach(file => {
+                activeFileCounter++;
+                const fileId = `pdf_${Date.now()}_${activeFileCounter}`;
                 activeFileMaps['merge'].set(fileId, file);
 
                 const div = document.createElement('div');
-                div.className = "flex items-stretch bg-white dark:bg-slate-800 rounded-2xl border-2 border-slate-200 dark:border-slate-700 cursor-grab active:cursor-grabbing hover:border-emerald-500 shadow-sm hover:shadow-md transition-all group overflow-hidden h-36";
+                div.className = "flex items-center justify-between bg-black/40 border border-white/5 rounded-lg p-3 cursor-grab hover:border-white/20 transition-all duration-150 group";
                 div.dataset.id = fileId;
                 
                 div.innerHTML = `
-                    <div class="pdf-cover-container w-32 bg-slate-100 dark:bg-slate-900 flex-shrink-0 flex items-center justify-center border-r border-slate-200 dark:border-slate-700 relative overflow-hidden p-3">
-                        <i class="fa-solid fa-circle-notch fa-spin text-slate-300 text-3xl"></i>
+                    <div class="flex items-center gap-3 min-w-0 flex-1">
+                        <i class="fa-solid fa-grip-vertical text-zinc-700 group-hover:text-zinc-500 transition-colors"></i>
+                        <i class="fa-solid fa-file-pdf text-red-500/80"></i>
+                        <span class="truncate text-xs font-mono text-zinc-300 group-hover:text-white transition-colors">${file.name}</span>
                     </div>
-                    <div class="flex-grow flex flex-col justify-center px-5 py-2 overflow-hidden">
-                        <div class="truncate text-lg font-bold text-slate-700 dark:text-slate-200 mb-1">${file.name}</div>
-                        <div class="text-sm font-semibold text-slate-400 page-count-tag">Loading preview...</div>
-                    </div>
-                    <div class="text-slate-300 dark:text-slate-600 bg-slate-50 dark:bg-slate-900 group-hover:bg-emerald-50 dark:group-hover:bg-emerald-900/20 group-hover:text-emerald-500 transition-colors w-16 flex items-center justify-center flex-shrink-0 border-l border-slate-100 dark:border-slate-700">
-                        <i class="fa-solid fa-grip-vertical text-2xl"></i>
-                    </div>
+                    <span class="text-[10px] font-mono text-zinc-600 pl-4 flex-shrink-0">${(file.size/1024/1024).toFixed(2)} MB</span>
                 `;
                 thumbContainer.appendChild(div);
-
-                try {
-                    const result = await renderPdfPageToCanvas(file, 1, 120);
-                    const cover = div.querySelector('.pdf-cover-container');
-                    cover.innerHTML = '';
-                    cover.appendChild(result.canvas);
-                    div.querySelector('.page-count-tag').innerHTML = `<i class="fa-regular fa-file-lines mr-1"></i> ${result.totalPages} Pages`;
-                } catch(e) {
-                    div.querySelector('.pdf-cover-container').innerHTML = '<i class="fa-solid fa-file-pdf text-red-400 text-5xl"></i>';
-                    div.querySelector('.page-count-tag').innerHTML = "Preview Unavailable";
-                }
             });
-            new Sortable(thumbContainer, { animation: 200, ghostClass: 'sortable-ghost-doc' });
         }
 
         async function handleProcess(event, toolId, apiEndpoint) {
@@ -429,10 +422,10 @@
 
             let progress = 0;
             const int = setInterval(() => {
-                progress += Math.random()*18 + 8;
-                if (progress > 95) progress = 95;
+                progress += Math.random() * 15 + 5;
+                if (progress > 90) progress = 90;
                 progressBar.style.width = progress + '%';
-            }, 180);
+            }, 200);
 
             try {
                 let formData = new FormData(event.target);
@@ -446,7 +439,7 @@
                 }
 
                 const res = await fetch(apiEndpoint, { method: 'POST', body: formData });
-                if (!res.ok) throw new Error(await res.text() || 'Processing failed');
+                if (!res.ok) throw new Error(await res.text() || 'Calculated logic returned non-zero validation array.');
 
                 clearInterval(int);
                 progressBar.style.width = '100%';
@@ -460,33 +453,41 @@
                 }
 
                 const dl = document.getElementById('workspace-download');
-                dl.href = window.URL.createObjectURL(blob);
+                const url = window.URL.createObjectURL(blob);
+                dl.href = url;
                 dl.download = filename;
+                
+                dl.onclick = () => setTimeout(() => window.URL.revokeObjectURL(url), 1000);
 
                 setTimeout(() => {
                     loading.classList.add('hidden');
                     success.classList.remove('hidden');
-                }, 600);
+                }, 500);
 
             } catch (err) {
                 clearInterval(int);
                 loading.classList.add('hidden');
                 options.classList.remove('hidden');
-                errorEl.innerHTML = `<i class="fa-solid fa-triangle-exclamation mr-2"></i> ${err.message}`;
+                errorEl.innerHTML = `> Run failure encountered: ${err.message}`;
                 errorEl.classList.remove('hidden');
             }
         }
 
         function resetWorkspace() {
             document.getElementById('workspace-form').reset();
+            const fileInput = document.getElementById('main-file-input');
+            if (fileInput) fileInput.value = '';
+
             document.getElementById('workspace-dropzone').classList.remove('hidden');
             document.getElementById('workspace-options').classList.add('hidden');
             document.getElementById('workspace-success').classList.add('hidden');
             document.getElementById('workspace-loading').classList.add('hidden');
             document.getElementById('generic-file-preview').classList.add('hidden');
             document.getElementById('progress-bar').style.width = '0%';
+            
             activeFileMaps['img2pdf'].clear();
             activeFileMaps['merge'].clear();
+            activeFileCounter = 0;
             
             const mergeUi = document.getElementById('merge-sort-ui');
             const imgUi = document.getElementById('img2pdf-sort-ui');
@@ -502,6 +503,35 @@
         }
 
         document.addEventListener('keydown', e => { if (e.key === 'Escape') closeWorkspace(); });
+
+        // --- FIXED ONE-TIME FIRING EASTER EGG ---
+        let lambdaClicks = 0;
+        function triggerEasterEgg() {
+            lambdaClicks++;
+            if (lambdaClicks === 3) {
+                // Break propagation paths immediately by decoupling listener matrices completely
+                document.getElementById('lambda-btn').onclick = null;
+                
+                const footerText = document.getElementById('footer-text');
+                footerText.innerHTML = '<span class="text-orange-500 font-bold font-mono animate-pulse tracking-wide">Subject: Gordon Freeman. Status: Awaiting Half-Life 3...</span>';
+                
+                const audioContainer = document.createElement('div');
+                audioContainer.innerHTML = '<iframe width="0" height="0" src="https://www.youtube.com/embed/LsAXF1Qa2v0?autoplay=1&controls=0&rel=0" frameborder="0" allow="autoplay; encrypted-media"></iframe>';
+                document.body.appendChild(audioContainer);
+
+                setTimeout(() => {
+                    if (document.body.contains(audioContainer)) {
+                        audioContainer.remove();
+                    }
+                }, 28000); // Strict cutoff alignment mapped exactly to target YouTube stream runtime
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            if (Math.random() <= 0.333) {
+                document.getElementById('lambda-btn').classList.remove('hidden');
+            }
+        });
     </script>
 </body>
 </html>

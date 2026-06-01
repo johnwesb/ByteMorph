@@ -6,13 +6,13 @@ import zipfile
 import os
 import sys
 import tempfile
+import textwrap
 from pdf2docx import Converter
 from docx2pdf import convert as convert_docx
 
 app = Flask(__name__)
 
-# --- SECURITY HELPERS ---
-ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'docx'}
+ALLOWED_EXTENSIONS = {'pdf', 'png', 'jpg', 'jpeg', 'docx', 'txt'}
 
 def allowed_file(filename, allowed_types=None):
     if not allowed_types:
@@ -99,14 +99,19 @@ def extract_text():
 
     try:
         doc = fitz.open(stream=file.read(), filetype="pdf")
-        text = "\n\n".join([page.get_text() for page in doc])
+        text_list = [page.get_text("text") for page in doc]
         doc.close()
         
+        text = "\n\n".join(text_list)
+        if not text.strip():
+            text = "--- Info: No digital text structures found on these pages. This file may consist entirely of scanned images or pure rasterized graphics. ---"
+            
         buffer = io.BytesIO(text.encode('utf-8'))
         safe_name = get_safe_name(file.filename)
-        return send_file(buffer, mimetype='text/plain', as_attachment=True, download_name=f"{safe_name}_text.txt")
-    except Exception:
-        return "Failed to extract text", 500
+        return send_file(buffer, mimetype='text/plain', as_attachment=True, download_name=f"{safe_name}_extracted.txt")
+    except Exception as e:
+        print("Extraction Break:", str(e))
+        return "Failed to extract text data", 500
 
 @app.route('/api/split-pdf', methods=['POST'])
 def split_pdf():
@@ -139,16 +144,40 @@ def rotate_pdf():
 
     try:
         angle = int(request.form.get('angle', 90))
+        mode = request.form.get('mode', 'all')
+        page_range = request.form.get('range', '')
+        
         doc = fitz.open(stream=file.read(), filetype="pdf")
-        for page in doc:
-            page.set_rotation(angle)
+        total = len(doc)
+        target_pages = []
+
+        if mode == 'all':
+            target_pages = list(range(total))
+        elif mode == 'odd':
+            target_pages = [i for i in range(total) if (i + 1) % 2 != 0]
+        elif mode == 'even':
+            target_pages = [i for i in range(total) if (i + 1) % 2 == 0]
+        elif mode == 'range' and page_range:
+            for element in page_range.split(','):
+                if '-' in element:
+                    start, end = map(int, element.split('-'))
+                    target_pages.extend(range(start - 1, end))
+                else:
+                    target_pages.append(int(element) - 1)
+
+        for p_idx in target_pages:
+            if 0 <= p_idx < total:
+                doc[p_idx].set_rotation((doc[p_idx].rotation + angle) % 360)
             
-        buffer = io.BytesIO(doc.tobytes())
+        buffer = io.BytesIO()
+        doc.save(buffer)
         doc.close()
+        buffer.seek(0)
         
         safe_name = get_safe_name(file.filename)
         return send_file(buffer, mimetype='application/pdf', as_attachment=True, download_name=f"{safe_name}_rotated.pdf")
-    except Exception:
+    except Exception as e:
+        print("Rotation failure:", str(e))
         return "Failed to rotate document", 500
 
 @app.route('/api/protect-pdf', methods=['POST'])
@@ -197,13 +226,17 @@ def add_watermark():
     if not file or not allowed_file(file.filename, {'pdf'}): return "Invalid file", 400
 
     try:
-        watermark_text = request.form.get('watermark_text', 'CONFIDENTIAL')
-        doc = fitz.open(stream=file.read(), filetype="pdf")
+        text = request.form.get('watermark_text', 'CONFIDENTIAL')
+        size = int(request.form.get('size', 50))
+        opacity = float(request.form.get('opacity', 0.3))
         
+        doc = fitz.open(stream=file.read(), filetype="pdf")
         for page in doc:
             rect = page.rect
-            p = fitz.Point(rect.width / 4, rect.height / 2)
-            page.insert_text(p, watermark_text, fontsize=60, color=(0.8, 0.2, 0.2), fill_opacity=0.3, rotate=-45)
+            shape = page.new_shape()
+            point = fitz.Point(rect.width / 4, rect.height / 2)
+            shape.insert_text(point, text, fontsize=size, color=(0.8, 0.2, 0.2), fontname="helv", rotate=45)
+            shape.commit(fill_opacity=opacity)
             
         buffer = io.BytesIO()
         doc.save(buffer)
@@ -212,8 +245,9 @@ def add_watermark():
         
         safe_name = get_safe_name(file.filename)
         return send_file(buffer, mimetype='application/pdf', as_attachment=True, download_name=f"{safe_name}_watermarked.pdf")
-    except Exception:
-        return "Failed to add watermark", 500
+    except Exception as e:
+        print("Watermark pipeline split:", str(e))
+        return "Failed to apply watermark matrix", 500
 
 @app.route('/api/pdf-to-word', methods=['POST'])
 def pdf_to_word():
@@ -223,7 +257,6 @@ def pdf_to_word():
     tmp_pdf = None
     tmp_docx = None
     try:
-        # Secure file creation to prevent Windows permission crashes
         fd1, tmp_pdf = tempfile.mkstemp(suffix=".pdf")
         os.close(fd1)
         fd2, tmp_docx = tempfile.mkstemp(suffix=".docx")
@@ -231,7 +264,8 @@ def pdf_to_word():
 
         file.save(tmp_pdf)
         cv = Converter(tmp_pdf)
-        cv.convert(tmp_docx)
+        # Using native reference margins for refined tracking layout configurations
+        cv.convert(tmp_docx, start=0, end=None)
         cv.close()
         
         with open(tmp_docx, "rb") as f:
@@ -241,52 +275,71 @@ def pdf_to_word():
         safe_name = get_safe_name(file.filename)
         return send_file(buffer, mimetype='application/vnd.openxmlformats-officedocument.wordprocessingml.document', as_attachment=True, download_name=f"{safe_name}_converted.docx")
     except Exception as e:
-        print("PDF to Word Error:", str(e))
-        return "Failed to convert to Word", 500
+        print("Structural Conversion Deviation:", str(e))
+        return "Internal engine layout translation failure", 500
     finally:
-        # Safely clean up memory
         if tmp_pdf and os.path.exists(tmp_pdf): os.remove(tmp_pdf)
         if tmp_docx and os.path.exists(tmp_docx): os.remove(tmp_docx)
 
-@app.route('/api/word-to-pdf', methods=['POST'])
-def word_to_pdf():
+@app.route('/api/doc-to-pdf', methods=['POST'])
+def doc_to_pdf():
     file = request.files.get('file')
-    if not file or not allowed_file(file.filename, {'docx'}): return "Invalid file", 400
+    if not file or not allowed_file(file.filename, {'docx', 'txt'}): return "Invalid file type", 400
 
-    tmp_docx = None
-    tmp_pdf = None
-    try:
-        # Initialize Windows COM thread securely
-        if sys.platform == "win32":
-            import pythoncom
-            pythoncom.CoInitialize()
+    ext = file.filename.rsplit('.', 1)[1].lower()
+    safe_name = get_safe_name(file.filename)
 
-        fd1, tmp_docx = tempfile.mkstemp(suffix=".docx")
-        os.close(fd1)
-        fd2, tmp_pdf = tempfile.mkstemp(suffix=".pdf")
-        os.close(fd2)
+    if ext == 'txt':
+        try:
+            text = file.read().decode('utf-8', errors='ignore')
+            doc = fitz.open()
+            page = doc.new_page()
+            y_text = 50
+            for paragraph in text.split('\n'):
+                lines = textwrap.wrap(paragraph, width=90)
+                if not lines: y_text += 15
+                for line in lines:
+                    if y_text > 780:
+                        page = doc.new_page()
+                        y_text = 50
+                    page.insert_text((50, y_text), line, fontsize=11, fontname="helv")
+                    y_text += 15
+            buffer = io.BytesIO()
+            doc.save(buffer)
+            doc.close()
+            buffer.seek(0)
+            return send_file(buffer, mimetype='application/pdf', as_attachment=True, download_name=f"{safe_name}_converted.pdf")
+        except Exception:
+            return "Failed to process text layout stream", 500
 
-        file.save(tmp_docx)
-        convert_docx(os.path.abspath(tmp_docx), os.path.abspath(tmp_pdf))
-        
-        with open(tmp_pdf, "rb") as f:
-            buffer = io.BytesIO(f.read())
-            
-        buffer.seek(0)
-        safe_name = get_safe_name(file.filename)
-        return send_file(buffer, mimetype='application/pdf', as_attachment=True, download_name=f"{safe_name}_converted.pdf")
-    except Exception as e:
-        print("Word to PDF Error:", str(e))
-        return "Failed to convert Word. Ensure Microsoft Word is installed on your PC.", 500
-    finally:
-        # Un-initialize COM thread and clean files
-        if sys.platform == "win32":
-            try:
+    elif ext == 'docx':
+        tmp_docx = None
+        tmp_pdf = None
+        try:
+            if sys.platform == "win32":
                 import pythoncom
-                pythoncom.CoUninitialize()
-            except: pass
-        if tmp_docx and os.path.exists(tmp_docx): os.remove(tmp_docx)
-        if tmp_pdf and os.path.exists(tmp_pdf): os.remove(tmp_pdf)
+                pythoncom.CoInitialize()
+
+            fd1, tmp_docx = tempfile.mkstemp(suffix=".docx")
+            os.close(fd1)
+            fd2, tmp_pdf = tempfile.mkstemp(suffix=".pdf")
+            os.close(fd2)
+
+            file.save(tmp_docx)
+            convert_docx(os.path.abspath(tmp_docx), os.path.abspath(tmp_pdf))
+            
+            with open(tmp_pdf, "rb") as f:
+                buffer = io.BytesIO(f.read())
+            buffer.seek(0)
+            return send_file(buffer, mimetype='application/pdf', as_attachment=True, download_name=f"{safe_name}_converted.pdf")
+        except Exception:
+            return "Conversion requires standard desktop dependencies setup", 500
+        finally:
+            if sys.platform == "win32":
+                try: import pythoncom; pythoncom.CoUninitialize()
+                except: pass
+            if tmp_docx and os.path.exists(tmp_docx): os.remove(tmp_docx)
+            if tmp_pdf and os.path.exists(tmp_pdf): os.remove(tmp_pdf)
 
 if __name__ == '__main__':
     from waitress import serve
@@ -297,16 +350,9 @@ if __name__ == '__main__':
     def start_server():
         serve(app, host="127.0.0.1", port=5000)
 
-    # Start the server in the background
     threading.Thread(target=start_server, daemon=True).start()
-    
-    # Wait a second for it to boot, then auto-open the browser
     time.sleep(1)
-    print("ByteMorph is running! Opening in your browser...")
     webbrowser.open("http://127.0.0.1:5000")
-    
     try:
-        while True:
-            time.sleep(1)
-    except KeyboardInterrupt:
-        print("\nShutting down ByteMorph...")
+        while True: time.sleep(1)
+    except KeyboardInterrupt: pass
