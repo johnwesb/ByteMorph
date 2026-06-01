@@ -69,10 +69,10 @@
         <div id="dashboard-view" class="fade-enter-active">
             <div class="py-24 text-center">
                 <div class="inline-block mb-6 px-3 py-1 rounded-full border border-white/10 bg-white/5 text-xs font-mono text-zinc-400 shadow-sm">
-                    > Environment Initialization Complete
+                    > Ready to process
                 </div>
                 <h1 class="text-4xl md:text-5xl font-semibold tracking-tight text-white mb-4 font-mono">Local Workspace</h1>
-                <p class="text-zinc-500 text-sm font-sans max-w-xl mx-auto">All processing execution maps occur completely inside sandboxed client memory spaces.</p>
+                <p class="text-zinc-500 text-sm font-sans max-w-xl mx-auto">All processing happens securely on your device. No files are uploaded to the cloud.</p>
             </div>
             <div class="max-w-6xl mx-auto px-6 pb-16">
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4" id="launcher-grid"></div>
@@ -85,16 +85,16 @@
     </main>
 
     <footer class="border-t border-white/5 py-8 text-center text-zinc-600 font-mono text-xs">
-        <p id="footer-text">ByteMorph Secure Instance Status <span id="lambda-btn" class="hidden cursor-pointer hover:text-orange-500 transition-colors px-1" onclick="triggerEasterEgg()">&lambda;</span></p>
+        <p id="footer-text">ByteMorph Local Environment <span id="lambda-btn" class="hidden cursor-pointer hover:text-orange-500 transition-colors px-1" onclick="triggerEasterEgg()">&lambda;</span></p>
     </footer>
 
     <script>
         const tools = [
-            { id: 'compress', title: 'Compress PDF', desc: 'Reduce file size losslessly', icon: 'fa-compress', api: '/api/compress-pdf', accept: '.pdf', multiple: false, dropText: 'Load Target PDF', dropSubText: 'Drop large document here',
+            { id: 'compress', title: 'Compress PDF', desc: 'Reduce file size losslessly', icon: 'fa-compress', api: '/api/compress-pdf', accept: '.pdf', multiple: false, dropText: 'Upload PDF', dropSubText: 'Drop large document here',
               optionsHtml: `
                 <div class="font-mono text-xs space-y-4">
                     <div>
-                        <label class="block text-zinc-400 mb-2">Compression Matrix</label>
+                        <label class="block text-zinc-400 mb-2">Compression Level</label>
                         <select name="level" id="compress-level" onchange="updateCompressInfo()" class="w-full p-3 bg-black/50 border border-white/10 rounded-md outline-none text-white">
                             <option value="1">Light (Fastest, Minimal Size Reduction)</option>
                             <option value="2" selected>Moderate (Recommended, Structural Cleanup)</option>
@@ -102,98 +102,98 @@
                         </select>
                     </div>
                     <div id="compress-info" class="p-4 bg-black/30 rounded-lg border border-white/5 text-zinc-400">
-                        <span class="text-blue-400">Moderate Compression:</span> Deeply cleans duplicate fonts, orphaned structural elements, and compresses data streams. <span class="text-white">Zero visual quality loss.</span>
+                        <span class="text-blue-400">Moderate Compression:</span> Cleans duplicate fonts, removes hidden elements, and compresses data. <span class="text-white">Zero visual quality loss.</span>
                     </div>
                 </div>`
             },
-            { id: 'pdf2img', title: 'PDF to Image', desc: 'Convert pages to PNG assets layer archives', icon: 'fa-file-image', api: '/api/pdf-to-image', accept: '.pdf', multiple: false, dropText: 'Load File Payload', dropSubText: 'Drop PDF document' },
-            { id: 'merge', title: 'Merge PDFs', desc: 'Consolidate file segments down recursively', icon: 'fa-layer-group', api: '/api/merge-pdfs', accept: '.pdf', multiple: true, dropText: 'Load Target Segments', dropSubText: 'Supports consecutive multi-directory additions', optionsHtml: '<div id="merge-sort-ui" class="hidden w-full mt-4"><div id="merge-thumbnails" class="flex flex-col gap-2 overflow-y-auto max-h-[40vh] p-1 bg-black/20 rounded-lg border border-white/5"></div></div>' },
-            { id: 'img2pdf', title: 'Images to PDF', desc: 'Compile graphical file arrays together', icon: 'fa-images', api: '/api/images-to-pdf', accept: 'image/png,image/jpeg,image/jpg', multiple: true, dropText: 'Load Images Grid', dropSubText: 'Supports consecutive file list injections', optionsHtml: '<div id="img2pdf-sort-ui" class="hidden w-full mt-4"><div id="img2pdf-thumbnails" class="grid grid-cols-2 md:grid-cols-3 gap-6 overflow-y-auto max-h-[50vh] p-4 bg-black/30 rounded-lg border border-white/5"></div></div>' },
-            { id: 'split', title: 'Split PDF', desc: 'Extract clean designated page range offsets', icon: 'fa-scissors', api: '/api/split-pdf', accept: '.pdf', multiple: false, dropText: 'Load Main Document', dropSubText: 'Drop document here',
+            { id: 'pdf2img', title: 'PDF to Image', desc: 'Convert pages to JPG/PNG archives', icon: 'fa-file-image', api: '/api/pdf-to-image', accept: '.pdf', multiple: false, dropText: 'Upload PDF', dropSubText: 'Drop document here' },
+            { id: 'merge', title: 'Merge PDFs', desc: 'Combine documents sequentially', icon: 'fa-layer-group', api: '/api/merge-pdfs', accept: '.pdf', multiple: true, dropText: 'Upload PDFs', dropSubText: 'Supports dragging from multiple folders', optionsHtml: '<div id="merge-sort-ui" class="hidden w-full mt-4"><div id="merge-thumbnails" class="flex flex-col gap-2 overflow-y-auto max-h-[40vh] p-1 bg-black/20 rounded-lg border border-white/5"></div></div>' },
+            { id: 'img2pdf', title: 'Images to PDF', desc: 'Compile images into a document', icon: 'fa-images', api: '/api/images-to-pdf', accept: 'image/png,image/jpeg,image/jpg', multiple: true, dropText: 'Upload Images', dropSubText: 'Supports dragging from multiple folders', optionsHtml: '<div id="img2pdf-sort-ui" class="hidden w-full mt-4"><div id="img2pdf-thumbnails" class="grid grid-cols-2 md:grid-cols-3 gap-6 overflow-y-auto max-h-[50vh] p-4 bg-black/30 rounded-lg border border-white/5"></div></div>' },
+            { id: 'split', title: 'Split PDF', desc: 'Extract specific page ranges', icon: 'fa-scissors', api: '/api/split-pdf', accept: '.pdf', multiple: false, dropText: 'Upload PDF', dropSubText: 'Drop document here',
               optionsHtml: `
-                <div class="p-4 bg-black/20 rounded-lg border border-white/5 mb-4 font-mono text-xs text-zinc-400" id="split-info-tag">> Parsing document parameters...</div>
+                <div class="p-4 bg-black/20 rounded-lg border border-white/5 mb-4 font-mono text-xs text-zinc-400" id="split-info-tag">> Parsing document...</div>
                 <div class="grid grid-cols-2 gap-4 font-mono">
                     <div>
-                        <label class="block text-xs text-zinc-400 mb-2">Initial Page Index</label>
+                        <label class="block text-xs text-zinc-400 mb-2">Start Page</label>
                         <input type="number" id="split-start" name="start" min="1" value="1" class="w-full p-3 bg-black/50 border border-white/10 rounded-md focus:border-white/30 outline-none text-white text-sm">
                     </div>
                     <div>
-                        <label class="block text-xs text-zinc-400 mb-2">Terminal Page Index</label>
+                        <label class="block text-xs text-zinc-400 mb-2">End Page</label>
                         <input type="number" id="split-end" name="end" min="1" value="1" class="w-full p-3 bg-black/50 border border-white/10 rounded-md focus:border-white/30 outline-none text-white text-sm">
                     </div>
                 </div>` 
             },
-            { id: 'rotate', title: 'Rotate PDF', desc: 'Modify system viewport rotation orientation parameters', icon: 'fa-rotate-right', api: '/api/rotate-pdf', accept: '.pdf', multiple: false, dropText: 'Load Source Asset', dropSubText: 'Drop file here',
+            { id: 'rotate', title: 'Rotate PDF', desc: 'Fix page orientation permanently', icon: 'fa-rotate-right', api: '/api/rotate-pdf', accept: '.pdf', multiple: false, dropText: 'Upload PDF', dropSubText: 'Drop document here',
               optionsHtml: `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono">
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-xs text-zinc-400 mb-2">Target Selection Constraints</label>
+                            <label class="block text-xs text-zinc-400 mb-2">Pages to Rotate</label>
                             <select name="mode" id="rotate-mode" onchange="toggleRotateRange(this.value)" class="w-full p-3 bg-black/50 border border-white/10 rounded-md outline-none text-white text-xs">
-                                <option value="all">Apply Globally (All Pages)</option>
-                                <option value="odd">Odd Page Sequences Only</option>
-                                <option value="even">Even Page Sequences Only</option>
-                                <option value="range">Explicit Page Sequences Array</option>
+                                <option value="all">All Pages</option>
+                                <option value="odd">Odd Pages Only</option>
+                                <option value="even">Even Pages Only</option>
+                                <option value="range">Custom Page Range</option>
                             </select>
                         </div>
                         <div id="rotate-range-box" class="hidden">
-                            <label class="block text-xs text-zinc-400 mb-2">Target Indexes (Example: 1,3,5-7)</label>
-                            <input type="text" name="range" class="w-full p-3 bg-black/50 border border-white/10 rounded-md outline-none text-white text-xs" placeholder="Define page arrays...">
+                            <label class="block text-xs text-zinc-400 mb-2">Page Numbers (Example: 1,3,5-7)</label>
+                            <input type="text" name="range" class="w-full p-3 bg-black/50 border border-white/10 rounded-md outline-none text-white text-xs" placeholder="e.g. 1-5, 8, 11">
                         </div>
                         <div>
-                            <label class="block text-xs text-zinc-400 mb-2">Direction Magnitude Matrix</label>
+                            <label class="block text-xs text-zinc-400 mb-2">Rotation Angle</label>
                             <select name="angle" class="w-full p-3 bg-black/50 border border-white/10 rounded-md outline-none text-white text-xs">
                                 <option value="90">90° Clockwise</option>
-                                <option value="180">180° Absolute</option>
+                                <option value="180">180°</option>
                                 <option value="270">90° Counter-Clockwise</option>
                             </select>
                         </div>
                     </div>
                     <div id="rotate-preview-pane" class="flex flex-col items-center justify-center p-4 bg-black/30 rounded-lg border border-white/5 text-zinc-500 text-xs text-center min-h-[150px]">
-                        Awaiting configuration maps initialization...
+                        Awaiting document...
                     </div>
                 </div>`
             },
-            { id: 'extract', title: 'Extract Text', desc: 'Pull plain text characters safely', icon: 'fa-file-lines', api: '/api/extract-text', accept: '.pdf', multiple: false, dropText: 'Load Structural Data', dropSubText: 'Drop target PDF' },
-            { id: 'protect', title: 'Protect PDF', desc: 'Deploy cryptographic password layers', icon: 'fa-lock', api: '/api/protect-pdf', accept: '.pdf', multiple: false, dropText: 'Load Source Payload', dropSubText: 'Drop file here',
+            { id: 'extract', title: 'Extract Text', desc: 'Pull raw text data from PDF', icon: 'fa-file-lines', api: '/api/extract-text', accept: '.pdf', multiple: false, dropText: 'Upload PDF', dropSubText: 'Drop document here' },
+            { id: 'protect', title: 'Protect PDF', desc: 'Apply AES password encryption', icon: 'fa-lock', api: '/api/protect-pdf', accept: '.pdf', multiple: false, dropText: 'Upload PDF', dropSubText: 'Drop document here',
               optionsHtml: `
                 <div class="font-mono">
-                    <label class="block text-xs text-zinc-400 mb-2">Define Configuration Key</label>
-                    <input type="password" name="password" placeholder="Key token value..." required class="w-full p-3 bg-black/50 border border-white/10 rounded-md outline-none text-white text-xs">
+                    <label class="block text-xs text-zinc-400 mb-2">Set Password</label>
+                    <input type="password" name="password" placeholder="Enter secure password..." required class="w-full p-3 bg-black/50 border border-white/10 rounded-md outline-none text-white text-xs">
                 </div>`
             },
-            { id: 'unlock', title: 'Unlock PDF', desc: 'Strip out active validation parameters', icon: 'fa-unlock', api: '/api/unlock-pdf', accept: '.pdf', multiple: false, dropText: 'Load Locked Payload', dropSubText: 'Drop password-protected document',
+            { id: 'unlock', title: 'Unlock PDF', desc: 'Remove password protection', icon: 'fa-unlock', api: '/api/unlock-pdf', accept: '.pdf', multiple: false, dropText: 'Upload Protected PDF', dropSubText: 'Drop locked document here',
               optionsHtml: `
                 <div class="font-mono">
-                    <label class="block text-xs text-zinc-400 mb-2">Security Key Decryption Values</label>
-                    <input type="password" name="password" placeholder="Key token value..." required class="w-full p-3 bg-black/50 border border-white/10 rounded-md outline-none text-white text-xs">
+                    <label class="block text-xs text-zinc-400 mb-2">Current Password</label>
+                    <input type="password" name="password" placeholder="Enter password..." required class="w-full p-3 bg-black/50 border border-white/10 rounded-md outline-none text-white text-xs">
                 </div>`
             },
-            { id: 'watermark', title: 'Watermark', desc: 'Stamp visible identification tags safely', icon: 'fa-stamp', api: '/api/add-watermark', accept: '.pdf', multiple: false, dropText: 'Load Core File', dropSubText: 'Drop target PDF',
+            { id: 'watermark', title: 'Watermark', desc: 'Stamp text diagonally on pages', icon: 'fa-stamp', api: '/api/add-watermark', accept: '.pdf', multiple: false, dropText: 'Upload PDF', dropSubText: 'Drop document here',
               optionsHtml: `
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6 font-mono text-xs">
                     <div class="space-y-4">
                         <div>
-                            <label class="block text-zinc-400 mb-2">Display Identification Text</label>
+                            <label class="block text-zinc-400 mb-2">Watermark Text</label>
                             <input type="text" name="watermark_text" id="wm-text" value="CONFIDENTIAL" oninput="updateWatermarkPreview()" class="w-full p-3 bg-black/50 border border-white/10 rounded-md text-white outline-none">
                         </div>
                         <div>
-                            <label class="block text-zinc-400 mb-2">Scale Weight (Font Size)</label>
+                            <label class="block text-zinc-400 mb-2">Font Size</label>
                             <input type="range" name="size" id="wm-size" min="20" max="100" value="45" oninput="updateWatermarkPreview()" class="w-full accent-white">
                         </div>
                         <div>
-                            <label class="block text-zinc-400 mb-2">Opacity Vector Density</label>
+                            <label class="block text-zinc-400 mb-2">Transparency (Opacity)</label>
                             <input type="range" name="opacity" id="wm-opacity" min="0.1" max="0.9" step="0.05" value="0.25" oninput="updateWatermarkPreview()" class="w-full accent-white">
                         </div>
                     </div>
                     <div class="flex flex-col items-center justify-center p-4 bg-black/30 rounded-lg border border-white/5 relative overflow-hidden min-h-[160px]">
-                        <div id="wm-preview-bg" class="absolute inset-0 flex items-center justify-center text-zinc-800/10 uppercase select-none text-[8px] font-bold pointer-events-none p-2 leading-none select-none">Preview Document Matrix Background Mock</div>
+                        <div id="wm-preview-bg" class="absolute inset-0 flex items-center justify-center text-zinc-800/10 uppercase select-none text-[8px] font-bold pointer-events-none p-2 leading-none">Document Background Preview</div>
                         <div id="wm-preview-text" class="text-red-500 font-bold select-none tracking-widest pointer-events-none transform rotate-[45deg] whitespace-nowrap transition-all z-10">CONFIDENTIAL</div>
                     </div>
                 </div>`
             },
-            { id: 'pdf2word', title: 'PDF to Word', desc: 'Process conversion profiles into DOCX files', icon: 'fa-file-word', api: '/api/pdf-to-word', accept: '.pdf', multiple: false, dropText: 'Load PDF File', dropSubText: 'Drop target file', optionsHtml: '<div class="bg-blue-500/10 border border-blue-500/20 text-blue-400 p-4 rounded-md font-sans text-sm"><i class="fa-solid fa-circle-info mr-2"></i>Attempting local layout reconstruction.</div>' },
-            { id: 'doc2pdf', title: 'Doc to PDF', desc: 'Convert structured layout parameters into PDF', icon: 'fa-file-pdf', api: '/api/doc-to-pdf', accept: '.docx,.txt', multiple: false, dropText: 'Load Document Payload', dropSubText: 'Drop target DOCX or TXT files here', optionsHtml: '<div class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-md font-sans text-sm"><i class="fa-solid fa-circle-info mr-2"></i>TXT processed natively. DOCX requires local MS Word.</div>' }
+            { id: 'pdf2word', title: 'PDF to Word', desc: 'Convert layouts to DOCX', icon: 'fa-file-word', api: '/api/pdf-to-word', accept: '.pdf', multiple: false, dropText: 'Upload PDF', dropSubText: 'Drop document here', optionsHtml: '<div class="bg-blue-500/10 border border-blue-500/20 text-blue-400 p-4 rounded-md font-sans text-sm"><i class="fa-solid fa-circle-info mr-2"></i>Attempting local layout reconstruction.</div>' },
+            { id: 'doc2pdf', title: 'Doc to PDF', desc: 'Convert TXT & DOCX to PDF', icon: 'fa-file-pdf', api: '/api/doc-to-pdf', accept: '.docx,.txt', multiple: false, dropText: 'Upload Document', dropSubText: 'Drop DOCX or TXT file here', optionsHtml: '<div class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-md font-sans text-sm"><i class="fa-solid fa-circle-info mr-2"></i>TXT processed natively. DOCX requires local MS Word.</div>' }
         ];
 
         let activeFileCounter = 0;
@@ -222,8 +222,8 @@
         function updateCompressInfo() {
             const level = document.getElementById('compress-level').value;
             const info = document.getElementById('compress-info');
-            if (level === '1') info.innerHTML = '<span class="text-emerald-400">Light Compression:</span> Safely compresses data streams and removes basic unreferenced objects. <span class="text-white">Zero visual quality loss.</span>';
-            else if (level === '2') info.innerHTML = '<span class="text-blue-400">Moderate Compression:</span> Deeply cleans duplicate fonts, orphaned structural elements, and compresses data streams. <span class="text-white">Zero visual quality loss.</span>';
+            if (level === '1') info.innerHTML = '<span class="text-emerald-400">Light Compression:</span> Safely compresses data and removes basic unused objects. <span class="text-white">Zero visual quality loss.</span>';
+            else if (level === '2') info.innerHTML = '<span class="text-blue-400">Moderate Compression:</span> Cleans duplicate fonts, removes hidden elements, and compresses data. <span class="text-white">Zero visual quality loss.</span>';
             else info.innerHTML = '<span class="text-red-400">Maximum Compression:</span> Aggressively linearizes the document and strips metadata to save space. <span class="text-white">Zero visual quality loss.</span>';
         }
 
@@ -249,7 +249,7 @@
 
             document.getElementById('workspace-container').innerHTML = `
                 <div class="mb-8 font-mono border-b border-white/5 pb-4">
-                    <h2 class="text-2xl font-semibold text-white mb-1"><i class="fa-solid ${tool.icon} text-zinc-500 mr-2"></i> /${tool.id}</h2>
+                    <h2 class="text-2xl font-semibold text-white mb-1"><i class="fa-solid ${tool.icon} text-zinc-500 mr-2"></i> ${tool.title}</h2>
                     <p class="text-zinc-500 text-sm font-sans">${tool.desc}</p>
                 </div>
 
@@ -272,9 +272,9 @@
                         ${tool.optionsHtml || ''}
                         
                         <div class="mt-8 flex gap-3 font-sans text-sm">
-                            <button type="button" onclick="resetWorkspace()" class="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-md transition-colors z-30 relative">Clear Workspace</button>
+                            <button type="button" onclick="resetWorkspace()" class="flex-1 py-3 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-md transition-colors z-30 relative">Cancel</button>
                             ${tool.multiple ? `<button type="button" onclick="triggerIncrementalUpload()" class="flex-1 py-3 bg-zinc-800 hover:bg-zinc-700 border border-white/5 text-zinc-200 rounded-md transition-colors z-30 relative flex items-center justify-center gap-2">Add More Files <i class="fa-solid fa-plus text-xs"></i></button>` : ''}
-                            <button type="submit" class="flex-[2] py-3 bg-white text-black font-semibold hover:bg-zinc-200 rounded-md transition-all z-30 relative flex items-center justify-center gap-2">Execute Task <i class="fa-solid fa-play text-xs"></i></button>
+                            <button type="submit" class="flex-[2] py-3 bg-white text-black font-semibold hover:bg-zinc-200 rounded-md transition-all z-30 relative flex items-center justify-center gap-2">Process File <i class="fa-solid fa-play text-xs"></i></button>
                         </div>
                         <p id="workspace-error" class="hidden mt-4 text-red-400 bg-red-500/10 border border-red-500/20 p-4 rounded-md text-xs font-mono"></p>
                     </div>
@@ -282,8 +282,8 @@
 
                 <div id="workspace-loading" class="hidden bento-card rounded-xl p-12 text-center font-sans">
                     <i class="fa-solid fa-circle-notch fa-spin text-4xl text-zinc-400 mb-6"></i>
-                    <h4 class="text-lg text-white mb-2 font-mono">Running Local Calculation Matrix...</h4>
-                    <p class="text-zinc-500 text-xs mb-8">Writing memory streams to disk architecture</p>
+                    <h4 class="text-lg text-white mb-2 font-mono">Processing document...</h4>
+                    <p class="text-zinc-500 text-xs mb-8">Applying changes locally</p>
                     <div class="max-w-xs mx-auto h-1 bg-zinc-800 rounded-full overflow-hidden">
                         <div id="progress-bar" class="progress-bar h-full bg-white w-0"></div>
                     </div>
@@ -291,11 +291,11 @@
 
                 <div id="workspace-success" class="hidden bento-card rounded-xl p-12 text-center font-sans">
                     <div class="w-16 h-16 mx-auto mb-6 bg-white/10 border border-white/20 text-white rounded-full flex items-center justify-center text-2xl"><i class="fa-solid fa-check"></i></div>
-                    <h3 class="text-xl text-white mb-2 font-mono">Execution Matrix Finalized</h3>
-                    <p class="text-zinc-500 text-xs mb-8">Isolated payload verified locally.</p>
-                    <a id="workspace-download" href="#" class="inline-flex items-center gap-3 bg-white text-black font-semibold py-3 px-8 rounded-md hover:bg-zinc-200 transition-colors text-sm mb-6">Save Payload <i class="fa-solid fa-download"></i></a>
+                    <h3 class="text-xl text-white mb-2 font-mono">Task Completed!</h3>
+                    <p class="text-zinc-500 text-xs mb-8">Your file is ready securely on your device.</p>
+                    <a id="workspace-download" href="#" class="inline-flex items-center gap-3 bg-white text-black font-semibold py-3 px-8 rounded-md hover:bg-zinc-200 transition-colors text-sm mb-6">Download Result <i class="fa-solid fa-download"></i></a>
                     <br>
-                    <button onclick="resetWorkspace()" class="text-zinc-500 hover:text-white text-xs transition-colors underline decoration-zinc-700 underline-offset-4">Run secondary function</button>
+                    <button onclick="resetWorkspace()" class="text-zinc-500 hover:text-white text-xs transition-colors underline decoration-zinc-700 underline-offset-4">Process another file</button>
                 </div>
             `;
             if(id === 'merge') new Sortable(document.getElementById('merge-thumbnails'), { animation: 200 });
@@ -353,12 +353,12 @@
                 try {
                     const url = URL.createObjectURL(file);
                     const pdf = await pdfjsLib.getDocument(url).promise;
-                    document.getElementById('split-info-tag').innerText = `> Document Track Analysis: Verified. Length: ${pdf.numPages} Pages total.`;
+                    document.getElementById('split-info-tag').innerText = `> Document Loaded. Total Pages: ${pdf.numPages}`;
                     document.getElementById('split-start').max = pdf.numPages;
                     document.getElementById('split-end').max = pdf.numPages;
                     document.getElementById('split-end').value = pdf.numPages;
                     URL.revokeObjectURL(url);
-                } catch(e) { document.getElementById('split-info-tag').innerText = `> Error parsing total parameters.`; }
+                } catch(e) { document.getElementById('split-info-tag').innerText = `> Error loading document pages.`; }
             }
 
             if (toolId === 'rotate') {
@@ -372,10 +372,10 @@
                     canvas.width = viewport.width; canvas.height = viewport.height;
                     await page.render({ canvasContext: canvas.getContext('2d'), viewport }).promise;
                     const pane = document.getElementById('rotate-preview-pane');
-                    pane.innerHTML = `<p class="mb-2 text-zinc-400">Target Scale (Page 1 Sample View)</p>`;
+                    pane.innerHTML = `<p class="mb-2 text-zinc-400">Page 1 Preview</p>`;
                     pane.appendChild(canvas);
                     URL.revokeObjectURL(url);
-                } catch(e) { document.getElementById('rotate-preview-pane').innerText = "Preview Generation Error Matrix."; }
+                } catch(e) { document.getElementById('rotate-preview-pane').innerText = "Preview generation failed."; }
             }
         }
 
@@ -461,7 +461,7 @@
                 }
 
                 const res = await fetch(apiEndpoint, { method: 'POST', body: formData });
-                if (!res.ok) throw new Error(await res.text() || 'Calculated logic returned non-zero validation array.');
+                if (!res.ok) throw new Error(await res.text() || 'Processing failed.');
 
                 clearInterval(int);
                 progressBar.style.width = '100%';
@@ -490,7 +490,7 @@
                 clearInterval(int);
                 loading.classList.add('hidden');
                 options.classList.remove('hidden');
-                errorEl.innerHTML = `> Run failure encountered: ${err.message}`;
+                errorEl.innerHTML = `> Error: ${err.message}`;
                 errorEl.classList.remove('hidden');
             }
         }
