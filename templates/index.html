@@ -90,6 +90,22 @@
 
     <script>
         const tools = [
+            { id: 'compress', title: 'Compress PDF', desc: 'Reduce file size losslessly', icon: 'fa-compress', api: '/api/compress-pdf', accept: '.pdf', multiple: false, dropText: 'Load Target PDF', dropSubText: 'Drop large document here',
+              optionsHtml: `
+                <div class="font-mono text-xs space-y-4">
+                    <div>
+                        <label class="block text-zinc-400 mb-2">Compression Matrix</label>
+                        <select name="level" id="compress-level" onchange="updateCompressInfo()" class="w-full p-3 bg-black/50 border border-white/10 rounded-md outline-none text-white">
+                            <option value="1">Light (Fastest, Minimal Size Reduction)</option>
+                            <option value="2" selected>Moderate (Recommended, Structural Cleanup)</option>
+                            <option value="3">Maximum (Aggressive Cleanup, Slower)</option>
+                        </select>
+                    </div>
+                    <div id="compress-info" class="p-4 bg-black/30 rounded-lg border border-white/5 text-zinc-400">
+                        <span class="text-blue-400">Moderate Compression:</span> Deeply cleans duplicate fonts, orphaned structural elements, and compresses data streams. <span class="text-white">Zero visual quality loss.</span>
+                    </div>
+                </div>`
+            },
             { id: 'pdf2img', title: 'PDF to Image', desc: 'Convert pages to PNG assets layer archives', icon: 'fa-file-image', api: '/api/pdf-to-image', accept: '.pdf', multiple: false, dropText: 'Load File Payload', dropSubText: 'Drop PDF document' },
             { id: 'merge', title: 'Merge PDFs', desc: 'Consolidate file segments down recursively', icon: 'fa-layer-group', api: '/api/merge-pdfs', accept: '.pdf', multiple: true, dropText: 'Load Target Segments', dropSubText: 'Supports consecutive multi-directory additions', optionsHtml: '<div id="merge-sort-ui" class="hidden w-full mt-4"><div id="merge-thumbnails" class="flex flex-col gap-2 overflow-y-auto max-h-[40vh] p-1 bg-black/20 rounded-lg border border-white/5"></div></div>' },
             { id: 'img2pdf', title: 'Images to PDF', desc: 'Compile graphical file arrays together', icon: 'fa-images', api: '/api/images-to-pdf', accept: 'image/png,image/jpeg,image/jpg', multiple: true, dropText: 'Load Images Grid', dropSubText: 'Supports consecutive file list injections', optionsHtml: '<div id="img2pdf-sort-ui" class="hidden w-full mt-4"><div id="img2pdf-thumbnails" class="grid grid-cols-2 md:grid-cols-3 gap-6 overflow-y-auto max-h-[50vh] p-4 bg-black/30 rounded-lg border border-white/5"></div></div>' },
@@ -176,8 +192,8 @@
                     </div>
                 </div>`
             },
-            { id: 'pdf2word', title: 'PDF to Word', desc: 'Process conversion profiles into DOCX files', icon: 'fa-file-word', api: '/api/pdf-to-word', accept: '.pdf', multiple: false, dropText: 'Load PDF File', dropSubText: 'Drop target file' },
-            { id: 'doc2pdf', title: 'Doc to PDF', desc: 'Convert structured layout parameters into standard documents', icon: 'fa-file-pdf', api: '/api/doc-to-pdf', accept: '.docx,.txt', multiple: false, dropText: 'Load Document Payload', dropSubText: 'Drop target DOCX or TXT files here' }
+            { id: 'pdf2word', title: 'PDF to Word', desc: 'Process conversion profiles into DOCX files', icon: 'fa-file-word', api: '/api/pdf-to-word', accept: '.pdf', multiple: false, dropText: 'Load PDF File', dropSubText: 'Drop target file', optionsHtml: '<div class="bg-blue-500/10 border border-blue-500/20 text-blue-400 p-4 rounded-md font-sans text-sm"><i class="fa-solid fa-circle-info mr-2"></i>Attempting local layout reconstruction.</div>' },
+            { id: 'doc2pdf', title: 'Doc to PDF', desc: 'Convert structured layout parameters into PDF', icon: 'fa-file-pdf', api: '/api/doc-to-pdf', accept: '.docx,.txt', multiple: false, dropText: 'Load Document Payload', dropSubText: 'Drop target DOCX or TXT files here', optionsHtml: '<div class="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 p-4 rounded-md font-sans text-sm"><i class="fa-solid fa-circle-info mr-2"></i>TXT processed natively. DOCX requires local MS Word.</div>' }
         ];
 
         let activeFileCounter = 0;
@@ -201,6 +217,14 @@
 
         function toggleRotateRange(val) {
             document.getElementById('rotate-range-box').style.display = (val === 'range') ? 'block' : 'none';
+        }
+
+        function updateCompressInfo() {
+            const level = document.getElementById('compress-level').value;
+            const info = document.getElementById('compress-info');
+            if (level === '1') info.innerHTML = '<span class="text-emerald-400">Light Compression:</span> Safely compresses data streams and removes basic unreferenced objects. <span class="text-white">Zero visual quality loss.</span>';
+            else if (level === '2') info.innerHTML = '<span class="text-blue-400">Moderate Compression:</span> Deeply cleans duplicate fonts, orphaned structural elements, and compresses data streams. <span class="text-white">Zero visual quality loss.</span>';
+            else info.innerHTML = '<span class="text-red-400">Maximum Compression:</span> Aggressively linearizes the document and strips metadata to save space. <span class="text-white">Zero visual quality loss.</span>';
         }
 
         function updateWatermarkPreview() {
@@ -319,7 +343,7 @@
                 <div class="flex items-center gap-4 p-4 bg-black/40 border border-white/5 rounded-lg">
                     <div class="text-2xl"><i class="fa-solid ${iconClass}"></i></div>
                     <div class="flex-1 min-w-0 font-mono">
-                        <h4 class="text-sm text-white truncate">${file.name}</h4>
+                        <h4 class="text-sm text-white truncate" title="${file.name}">${file.name}</h4>
                         <p class="text-zinc-500 text-xs mt-1">${(file.size/1024/1024).toFixed(2)} MB</p>
                     </div>
                 </div>
@@ -355,7 +379,6 @@
             }
         }
 
-        // Cumulative implementation fixing Multi-Directory breaks and Ant thumbnails 
         function appendImagesToUI(files) {
             const thumbContainer = document.getElementById('img2pdf-thumbnails');
             document.getElementById('img2pdf-sort-ui').classList.remove('hidden');
@@ -382,7 +405,6 @@
             });
         }
 
-        // Cumulative implementation for multi-directory assembly parameters tracking
         function appendPDFsToMergeUI(files) {
             const thumbContainer = document.getElementById('merge-thumbnails');
             document.getElementById('merge-sort-ui').classList.remove('hidden');
@@ -400,7 +422,7 @@
                     <div class="flex items-center gap-3 min-w-0 flex-1">
                         <i class="fa-solid fa-grip-vertical text-zinc-700 group-hover:text-zinc-500 transition-colors"></i>
                         <i class="fa-solid fa-file-pdf text-red-500/80"></i>
-                        <span class="truncate text-xs font-mono text-zinc-300 group-hover:text-white transition-colors">${file.name}</span>
+                        <span class="truncate text-xs font-mono text-zinc-300 group-hover:text-white transition-colors" title="${file.name}">${file.name}</span>
                     </div>
                     <span class="text-[10px] font-mono text-zinc-600 pl-4 flex-shrink-0">${(file.size/1024/1024).toFixed(2)} MB</span>
                 `;
@@ -504,12 +526,10 @@
 
         document.addEventListener('keydown', e => { if (e.key === 'Escape') closeWorkspace(); });
 
-        // --- FIXED ONE-TIME FIRING EASTER EGG ---
         let lambdaClicks = 0;
         function triggerEasterEgg() {
             lambdaClicks++;
             if (lambdaClicks === 3) {
-                // Break propagation paths immediately by decoupling listener matrices completely
                 document.getElementById('lambda-btn').onclick = null;
                 
                 const footerText = document.getElementById('footer-text');
@@ -523,7 +543,7 @@
                     if (document.body.contains(audioContainer)) {
                         audioContainer.remove();
                     }
-                }, 28000); // Strict cutoff alignment mapped exactly to target YouTube stream runtime
+                }, 28000); 
             }
         }
 
