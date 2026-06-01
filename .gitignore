@@ -1,4 +1,4 @@
 env/
 dist/
-build/ByteMorph/
+build/
 __pycache__/
